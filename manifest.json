@@ -21,6 +21,9 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["health", "lifestyle"],
+  "categories": [
+    "health",
+    "lifestyle"
+  ],
   "lang": "en"
 }

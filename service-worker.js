@@ -2,7 +2,7 @@
    LUNA – service-worker.js  (PWA + Notification support)
    ============================================================ */
 
-const CACHE_NAME = 'luna-v2';
+const CACHE_NAME = 'luna-v3';
 const ASSETS = [
   './',
   './index.html',

@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Luna – Your Cycle, Your Story</title>
-  <meta name="description" content="Luna is a beautiful, private menstrual cycle tracker. Log your period, predict your next cycle, track symptoms, and understand your body better." />
+  <meta name="description"
+    content="Luna is a beautiful, private menstrual cycle tracker. Log your period, predict your next cycle, track symptoms, and understand your body better." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap"
+    rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
@@ -17,6 +21,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Luna" />
 </head>
+
 <body>
 
   <!-- ===== NAVIGATION ===== -->
@@ -25,6 +30,7 @@
       <div class="nav-logo">
         <span class="logo-icon">🌙</span>
         <span class="logo-text">Luna</span>
+        <span class="cloud-status" id="cloudStatus"></span>
       </div>
       <div class="nav-links">
         <a href="#dashboard" class="nav-link active" data-page="dashboard">Dashboard</a>
@@ -51,7 +57,7 @@
         <div class="hero-orb orb3"></div>
         <div class="hero-content">
           <p class="hero-greeting" id="heroGreeting">Good evening, Beautiful 🌸</p>
-          <h1 class="hero-title">Your Cycle,<br/><em>Your Story</em></h1>
+          <h1 class="hero-title">Your Cycle,<br /><em>Your Story</em></h1>
           <p class="hero-sub" id="heroSub">Loading your data…</p>
         </div>
         <div class="cycle-ring-wrap">
@@ -59,14 +65,13 @@
             <svg class="ring-svg" viewBox="0 0 200 200">
               <defs>
                 <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style="stop-color:#f472b6"/>
-                  <stop offset="100%" style="stop-color:#a78bfa"/>
+                  <stop offset="0%" style="stop-color:#f472b6" />
+                  <stop offset="100%" style="stop-color:#a78bfa" />
                 </linearGradient>
               </defs>
-              <circle cx="100" cy="100" r="80" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="12"/>
+              <circle cx="100" cy="100" r="80" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="12" />
               <circle id="ringProgress" cx="100" cy="100" r="80" fill="none" stroke="url(#ringGrad)" stroke-width="12"
-                stroke-linecap="round" stroke-dasharray="502" stroke-dashoffset="502"
-                transform="rotate(-90 100 100)"/>
+                stroke-linecap="round" stroke-dasharray="502" stroke-dashoffset="502" transform="rotate(-90 100 100)" />
             </svg>
             <div class="ring-center">
               <span class="ring-day" id="ringDay">–</span>
@@ -335,6 +340,12 @@
         <label class="form-label" for="editPeriodLen">Average Period Length (days)</label>
         <input type="number" id="editPeriodLen" class="form-input" min="2" max="10" />
       </div>
+      <!-- Cloud Sync Section -->
+      <div class="form-group sync-form-group">
+        <label class="form-label" for="editSyncUrl">☁️ Cloud Sync URL (Optional)</label>
+        <input type="url" id="editSyncUrl" class="form-input" placeholder="Paste Google Apps Script Web App URL" />
+        <span class="form-help-text">Share data instantly with your boyfriend's phone. <a href="#" id="syncGuideBtn">How to set up? 💡</a></span>
+      </div>
       <div class="settings-actions">
         <button class="save-btn modal-btn" id="settingsSaveBtn">Save Changes 🌸</button>
         <button class="cancel-btn" id="settingsCancelBtn">Cancel</button>
@@ -374,6 +385,52 @@
     </div>
   </div>
 
+  <!-- ===== SYNC GUIDE MODAL ===== -->
+  <div class="modal-overlay hidden" id="syncGuideModal">
+    <div class="modal-box guide-modal-box">
+      <div class="modal-header">
+        <span class="modal-emoji">☁️</span>
+        <h2 class="modal-title">Cloud Sync Setup</h2>
+        <p class="modal-sub">Keep both devices in sync completely free! 💖</p>
+      </div>
+      <div class="guide-steps" style="text-align: left; font-size: 0.85rem; line-height: 1.6; color: var(--clr-text-muted); max-height: 50vh; overflow-y: auto; padding-right: 0.5rem; margin-bottom: 1.5rem;">
+        <p style="margin-bottom: 0.8rem; color: var(--clr-lavender);">Luna uses Google Apps Script to securely and privately store your data in your Google Account script properties. No hosting required!</p>
+        <ol style="margin-left: 1.25rem; display: flex; flex-direction: column; gap: 0.6rem;">
+          <li>Go to <a href="https://script.google.com" target="_blank" style="color: var(--clr-pink);">script.google.com</a> and sign in.</li>
+          <li>Click <strong>New Project</strong>.</li>
+          <li>Replace any code in the editor with this script:
+            <pre style="background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 6px; font-size: 0.72rem; overflow-x: auto; color: var(--clr-text); font-family: monospace; margin: 0.4rem 0;">function doPost(e) {
+  var data = JSON.parse(e.postData.contents);
+  var properties = PropertiesService.getScriptProperties();
+  properties.setProperty('luna_data', JSON.stringify(data));
+  return ContentService.createTextOutput(JSON.stringify({status: 'success'}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+function doGet(e) {
+  var properties = PropertiesService.getScriptProperties();
+  var data = properties.getProperty('luna_data') || '{}';
+  return ContentService.createTextOutput(data)
+    .setMimeType(ContentService.MimeType.JSON);
+}</pre>
+          </li>
+          <li>Click <strong>Deploy</strong> → <strong>New deployment</strong>.</li>
+          <li>Click the gear icon → <strong>Web app</strong>.</li>
+          <li>Set:
+            <ul style="margin-left: 1rem; list-style-type: circle;">
+              <li>Execute as: <strong>Me</strong></li>
+              <li>Who has access: <strong>Anyone</strong> (necessary for phone syncing)</li>
+            </ul>
+          </li>
+          <li>Click <strong>Deploy</strong> and authorize permissions.</li>
+          <li>Copy the <strong>Web app URL</strong>.</li>
+          <li>Paste it into the <strong>Cloud Sync URL</strong> input in Luna's settings!</li>
+        </ol>
+      </div>
+      <button class="save-btn modal-btn" id="syncGuideCloseBtn">Got it, thank you! 💕</button>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
+
 </html>
