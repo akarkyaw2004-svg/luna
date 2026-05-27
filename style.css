@@ -2,8 +2,6 @@
    LUNA – Menstrual Cycle Tracker  |  style.css
    ========================================================= */
 
-/* ── Google Fonts imported in HTML ── */
-
 /* ─── CSS Custom Properties ─── */
 :root {
   --clr-bg:        #0d0a14;
@@ -115,6 +113,28 @@ body {
   font-size: 1rem;
   cursor: pointer;
   box-shadow: 0 0 12px rgba(244,114,182,0.4);
+  border: none;
+  transition: var(--transition);
+  position: relative;
+}
+.nav-avatar:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(244,114,182,0.5);
+}
+.nav-avatar:hover::after {
+  content: 'Settings ⚙️';
+  position: absolute;
+  bottom: -30px;
+  right: 0;
+  background: var(--clr-surface2);
+  border: 1px solid var(--clr-border);
+  color: var(--clr-text-muted);
+  font-size: 0.72rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  font-family: 'Inter', sans-serif;
+  pointer-events: none;
 }
 
 /* ─── MAIN ─── */
@@ -729,200 +749,158 @@ body {
 .modal-sub { color: var(--clr-text-muted); font-size: 0.88rem; }
 .modal-btn { width: 100%; text-align: center; }
 
+/* ─── SETTINGS EXTRAS ─── */
+.settings-actions { display: flex; gap: 0.75rem; align-items: center; margin-top: 0.5rem; }
+.settings-actions .modal-btn { margin-top: 0; }
+
+.cancel-btn {
+  padding: 0.7rem 1.5rem; border-radius: 99px;
+  border: 1px solid var(--clr-border); background: transparent;
+  color: var(--clr-text-muted); font-size: 0.9rem; font-weight: 500;
+  font-family: 'Inter', sans-serif; cursor: pointer; transition: var(--transition);
+}
+.cancel-btn:hover { border-color: var(--clr-lavender); color: var(--clr-text); background: rgba(196,181,253,0.08); }
+
+.danger-zone { margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid rgba(251,113,133,0.15); }
+.danger-label { font-size: 0.75rem; font-weight: 600; color: var(--clr-rose); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.75rem; }
+.danger-btn {
+  padding: 0.55rem 1.25rem; border-radius: 99px;
+  border: 1px solid rgba(251,113,133,0.35); background: rgba(251,113,133,0.08);
+  color: var(--clr-rose); font-size: 0.82rem; font-weight: 500;
+  font-family: 'Inter', sans-serif; cursor: pointer; transition: var(--transition);
+}
+.danger-btn:hover { background: rgba(251,113,133,0.18); border-color: var(--clr-rose); box-shadow: 0 0 12px rgba(251,113,133,0.2); }
+
+/* ─── REMINDER BANNER ─── */
+.reminder-banner {
+  position: fixed; top: 80px; left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  z-index: 150; width: calc(100% - 2rem); max-width: 620px;
+  background: linear-gradient(135deg, rgba(30,15,50,0.97), rgba(45,15,61,0.97));
+  border: 1px solid rgba(244,114,182,0.5); border-radius: var(--radius-md);
+  box-shadow: 0 12px 50px rgba(244,114,182,0.3);
+  backdrop-filter: blur(20px); opacity: 0; pointer-events: none;
+  transition: all 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+.reminder-banner.show { opacity: 1; pointer-events: all; transform: translateX(-50%) translateY(0); }
+.reminder-banner.hidden { display: none; }
+.reminder-inner { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.25rem; }
+.reminder-emoji { font-size: 2rem; flex-shrink: 0; animation: heartbeat 1.5s ease-in-out infinite; }
+@keyframes heartbeat { 0%,100%{transform:scale(1);} 50%{transform:scale(1.2);} }
+.reminder-text { flex: 1; }
+.reminder-title { font-weight: 600; font-size: 0.88rem; color: var(--clr-pink); margin-bottom: 0.25rem; }
+.reminder-msg { font-size: 0.85rem; color: var(--clr-text); line-height: 1.55; font-style: italic; }
+.reminder-close {
+  background: none; border: none; color: var(--clr-text-muted);
+  font-size: 1rem; cursor: pointer; padding: 0.25rem 0.5rem;
+  border-radius: 6px; transition: var(--transition); flex-shrink: 0;
+}
+.reminder-close:hover { color: var(--clr-text); }
+
+/* ─── NOTIF PROMPT ─── */
+.notif-prompt {
+  display: flex; align-items: center; gap: 0.75rem;
+  background: rgba(167,139,250,0.07); border: 1px solid rgba(167,139,250,0.22);
+  border-radius: var(--radius-md); padding: 1rem 1.25rem; margin: 0 0 1rem;
+  animation: fadeIn 0.4s ease;
+}
+.notif-prompt-text { flex: 1; font-size: 0.85rem; color: var(--clr-text-muted); }
+.notif-prompt-text strong { display: block; color: var(--clr-lavender); margin-bottom: 0.2rem; font-size: 0.9rem; }
+.notif-allow-btn {
+  padding: 0.45rem 1.1rem; border-radius: 99px; border: none;
+  background: var(--gradient-btn); color: #fff; font-size: 0.8rem;
+  font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer;
+  white-space: nowrap; transition: var(--transition);
+}
+.notif-allow-btn:hover { box-shadow: 0 4px 18px rgba(244,114,182,0.4); }
+
+/* ─── BOTTOM NAV (Android/Mobile) ─── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 68px;
+  background: rgba(22, 16, 31, 0.94);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid var(--clr-border);
+  display: none;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 1000;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.5);
+}
+
+.bn-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 100%;
+  text-decoration: none;
+  color: var(--clr-text-muted);
+  font-size: 0.72rem;
+  font-weight: 500;
+  gap: 0.25rem;
+  transition: var(--transition);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bn-icon {
+  font-size: 1.35rem;
+  transition: var(--transition);
+}
+
+.bn-item:hover {
+  color: var(--clr-text);
+}
+
+.bn-item.active {
+  color: var(--clr-pink);
+}
+
+.bn-item.active .bn-icon {
+  transform: translateY(-2px) scale(1.1);
+  text-shadow: 0 0 10px rgba(244, 114, 182, 0.4);
+}
+
 /* ─── RESPONSIVE ─── */
 @media (max-width: 600px) {
+  .navbar .nav-links {
+    display: none;
+  }
+  .bottom-nav {
+    display: flex;
+  }
+  .app-main {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0));
+  }
   .hero-banner  { flex-direction: column; text-align: center; padding: 2rem 1.25rem; }
   .stats-grid   { grid-template-columns: 1fr 1fr; }
   .insight-cards{ grid-template-columns: 1fr 1fr; }
   .cycle-ring-wrap { order: -1; }
-  .nav-links .nav-link { padding: 0.4rem 0.6rem; font-size: 0.8rem; }
+  
+  /* Modals as beautiful slide-up bottom sheets on Android */
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .modal-box {
+    margin-top: auto;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-bottom: none;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUpBottom 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 2rem 1.5rem;
+  }
 }
 
-/* ─── NAV AVATAR as button ─── */
-.nav-avatar {
-  background: var(--gradient-btn);
-  border: none;
-  cursor: pointer;
-  transition: var(--transition);
-  position: relative;
+@keyframes slideUpBottom {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
-.nav-avatar:hover {
-  transform: scale(1.1);
-  box-shadow: 0 0 20px rgba(244,114,182,0.5);
-}
-.nav-avatar:hover::after {
-  content: 'Settings ⚙️';
-  position: absolute;
-  bottom: -30px;
-  right: 0;
-  background: var(--clr-surface2);
-  border: 1px solid var(--clr-border);
-  color: var(--clr-text-muted);
-  font-size: 0.72rem;
-  padding: 0.25rem 0.6rem;
-  border-radius: 6px;
-  white-space: nowrap;
-  font-family: 'Inter', sans-serif;
-  pointer-events: none;
-}
-
-/* ─── SETTINGS MODAL EXTRAS ─── */
-.settings-actions {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  margin-top: 0.5rem;
-}
-.settings-actions .modal-btn { margin-top: 0; }
-
-.cancel-btn {
-  padding: 0.7rem 1.5rem;
-  border-radius: 99px;
-  border: 1px solid var(--clr-border);
-  background: transparent;
-  color: var(--clr-text-muted);
-  font-size: 0.9rem;
-  font-weight: 500;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  transition: var(--transition);
-}
-.cancel-btn:hover {
-  border-color: var(--clr-lavender);
-  color: var(--clr-text);
-  background: rgba(196,181,253,0.08);
-}
-
-.danger-zone {
-  margin-top: 1.75rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid rgba(251,113,133,0.15);
-}
-.danger-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--clr-rose);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 0.75rem;
-}
-.danger-btn {
-  padding: 0.55rem 1.25rem;
-  border-radius: 99px;
-  border: 1px solid rgba(251,113,133,0.35);
-  background: rgba(251,113,133,0.08);
-  color: var(--clr-rose);
-  font-size: 0.82rem;
-  font-weight: 500;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  transition: var(--transition);
-}
-.danger-btn:hover {
-  background: rgba(251,113,133,0.18);
-  border-color: var(--clr-rose);
-  box-shadow: 0 0 12px rgba(251,113,133,0.2);
-}
-
-/* ─── REMINDER BANNER ─── */
-.reminder-banner {
-  position: fixed;
-  top: 80px;
-  left: 50%;
-  transform: translateX(-50%) translateY(-20px);
-  z-index: 150;
-  width: calc(100% - 2rem);
-  max-width: 620px;
-  background: linear-gradient(135deg, rgba(30,15,50,0.97) 0%, rgba(45,15,61,0.97) 100%);
-  border: 1px solid rgba(244,114,182,0.5);
-  border-radius: var(--radius-md);
-  box-shadow: 0 12px 50px rgba(244,114,182,0.3), 0 0 0 1px rgba(167,139,250,0.12);
-  backdrop-filter: blur(20px);
-  opacity: 0;
-  pointer-events: none;
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.reminder-banner.show {
-  opacity: 1;
-  pointer-events: all;
-  transform: translateX(-50%) translateY(0);
-}
-.reminder-banner.hidden { display: none; }
-
-.reminder-inner {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.25rem;
-}
-.reminder-emoji {
-  font-size: 2rem;
-  flex-shrink: 0;
-  animation: heartbeat 1.5s ease-in-out infinite;
-}
-@keyframes heartbeat {
-  0%, 100% { transform: scale(1); }
-  50%       { transform: scale(1.2); }
-}
-.reminder-text { flex: 1; }
-.reminder-title {
-  font-weight: 600;
-  font-size: 0.88rem;
-  color: var(--clr-pink);
-  margin-bottom: 0.25rem;
-  letter-spacing: 0.02em;
-}
-.reminder-msg {
-  font-size: 0.85rem;
-  color: var(--clr-text);
-  line-height: 1.55;
-  font-style: italic;
-}
-.reminder-close {
-  background: none;
-  border: none;
-  color: var(--clr-text-muted);
-  font-size: 1rem;
-  cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  border-radius: 6px;
-  transition: var(--transition);
-  flex-shrink: 0;
-}
-.reminder-close:hover { color: var(--clr-text); background: rgba(255,255,255,0.06); }
-
-/* notification permission prompt inside dashboard */
-.notif-prompt {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  background: rgba(167,139,250,0.07);
-  border: 1px solid rgba(167,139,250,0.22);
-  border-radius: var(--radius-md);
-  padding: 1rem 1.25rem;
-  margin: 0 0 1rem;
-  animation: fadeIn 0.4s ease;
-}
-.notif-prompt-text { flex: 1; font-size: 0.85rem; color: var(--clr-text-muted); }
-.notif-prompt-text strong {
-  display: block;
-  color: var(--clr-lavender);
-  margin-bottom: 0.2rem;
-  font-size: 0.9rem;
-}
-.notif-allow-btn {
-  padding: 0.45rem 1.1rem;
-  border-radius: 99px;
-  border: none;
-  background: var(--gradient-btn);
-  color: #fff;
-  font-size: 0.8rem;
-  font-weight: 600;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: var(--transition);
-  box-shadow: 0 2px 12px rgba(244,114,182,0.3);
-}
-.notif-allow-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 18px rgba(244,114,182,0.4); }
-

@@ -1,114 +1,89 @@
 /* ============================================================
-   LUNA – app.js  |  Menstrual Cycle Tracker Logic
+   LUNA – app.js  |  Tab-based + Notifications + Settings
    ============================================================ */
-
 'use strict';
 
-/* ── Storage Helpers ── */
+/* ── Storage ── */
 const store = {
-  get: (k, def = null) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } },
+  get: (k, d = null) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
   set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
 };
 
-/* ── App State ── */
+/* ── State ── */
 let state = {
-  user: store.get('luna_user', null),       // { name, lastPeriod, cycleLen, periodLen }
-  logs: store.get('luna_logs', []),          // [{ start, end, flow, note }]
-  todayLog: store.get('luna_today', {}),     // { date, moods:[], symptoms:[] }
+  user:     store.get('luna_user', null),
+  logs:     store.get('luna_logs', []),
+  todayLog: store.get('luna_today', {}),
 };
 
-/* ── Date Helpers ── */
-const today = () => new Date().toISOString().split('T')[0];
-const addDays = (dateStr, n) => {
-  const d = new Date(dateStr);
-  d.setDate(d.getDate() + n);
-  return d.toISOString().split('T')[0];
-};
+/* ── Date helpers ── */
+const today    = () => new Date().toISOString().split('T')[0];
+const addDays  = (d, n) => { const dt = new Date(d); dt.setDate(dt.getDate() + n); return dt.toISOString().split('T')[0]; };
 const diffDays = (a, b) => Math.round((new Date(a) - new Date(b)) / 86400000);
-const fmt = (dateStr) => {
-  if (!dateStr) return '–';
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-};
-const fmtShort = (dateStr) => {
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-};
+const fmt      = d => { if (!d) return '–'; return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); };
+const fmtShort = d => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
 /* ── Cycle Calculation ── */
 function cycleInfo() {
   if (!state.user) return null;
   const { lastPeriod, cycleLen, periodLen } = state.user;
-
-  // Find most recent period start from logs or from user setup
   const allStarts = state.logs.map(l => l.start).concat([lastPeriod]).sort((a, b) => b.localeCompare(a));
   const lastStart = allStarts[0];
-
   const dayOfCycle = diffDays(today(), lastStart) + 1;
   const nextPeriod = addDays(lastStart, cycleLen);
   const daysUntil  = diffDays(nextPeriod, today());
-
-  // Ovulation ~14 days before end of cycle
   const ovulationDay = cycleLen - 14;
   const fertileStart = ovulationDay - 5;
   const fertileEnd   = ovulationDay + 1;
 
-  // Phase
   let phase, phaseIcon, phaseDesc, phaseTips;
   if (dayOfCycle >= 1 && dayOfCycle <= periodLen) {
-    phase = 'Menstrual Phase 🌑';
-    phaseIcon = '🌑';
+    phase = 'Menstrual Phase 🌑'; phaseIcon = '🌑';
     phaseDesc = 'Your period is here. Your body is shedding its uterine lining. It\'s okay to rest, be gentle with yourself, and prioritize comfort.';
     phaseTips = ['🛁 Warm baths', '🍫 Dark chocolate', '💤 Extra rest', '🍵 Herbal tea', '🧘 Gentle yoga'];
   } else if (dayOfCycle <= fertileStart) {
-    phase = 'Follicular Phase 🌒';
-    phaseIcon = '🌒';
+    phase = 'Follicular Phase 🌒'; phaseIcon = '🌒';
     phaseDesc = 'Your body is building up energy as follicles mature. You may feel a surge of creativity, optimism, and social energy!';
     phaseTips = ['🏃 Try new workouts', '🎨 Creative projects', '🥗 Fresh, light foods', '💬 Social activities', '📚 Learn something new'];
   } else if (dayOfCycle <= ovulationDay + 1) {
-    phase = 'Ovulation Phase 🌕';
-    phaseIcon = '🌕';
-    phaseDesc = 'Peak fertility! Estrogen and LH surge, you\'re at your most radiant and confident. Energy levels are at their highest.';
+    phase = 'Ovulation Phase 🌕'; phaseIcon = '🌕';
+    phaseDesc = 'Peak fertility! Estrogen and LH surge — you\'re at your most radiant and confident. Energy levels are at their highest.';
     phaseTips = ['💪 Intense workouts', '🌟 Important meetings', '💃 Socializing', '🥑 Healthy fats', '💕 Connect with loved ones'];
   } else {
-    phase = 'Luteal Phase 🌖';
-    phaseIcon = '🌖';
+    phase = 'Luteal Phase 🌖'; phaseIcon = '🌖';
     phaseDesc = 'Progesterone rises as your body prepares. You may notice mood shifts or cravings. Focus on self-care and slower activities.';
     phaseTips = ['🧘 Meditation', '📖 Journaling', '🫖 Chamomile tea', '🛌 Prioritize sleep', '🍳 Protein-rich foods'];
   }
-
   return { dayOfCycle, nextPeriod, daysUntil, phase, phaseIcon, phaseDesc, phaseTips,
            ovulationDay, fertileStart, fertileEnd, lastStart, cycleLen, periodLen };
 }
 
 function avgCycleLength() {
   if (state.logs.length < 2) return state.user?.cycleLen || 28;
-  const sorted = [...state.logs].sort((a,b) => a.start.localeCompare(b.start));
-  let total = 0, count = 0;
-  for (let i = 1; i < sorted.length; i++) {
-    total += diffDays(sorted[i].start, sorted[i-1].start);
-    count++;
-  }
-  return Math.round(total / count);
+  const s = [...state.logs].sort((a, b) => a.start.localeCompare(b.start));
+  let t = 0;
+  for (let i = 1; i < s.length; i++) t += diffDays(s[i].start, s[i - 1].start);
+  return Math.round(t / (s.length - 1));
 }
 
 function avgPeriodLength() {
-  const valid = state.logs.filter(l => l.end);
-  if (!valid.length) return state.user?.periodLen || 5;
-  return Math.round(valid.reduce((acc, l) => acc + diffDays(l.end, l.start) + 1, 0) / valid.length);
+  const v = state.logs.filter(l => l.end);
+  if (!v.length) return state.user?.periodLen || 5;
+  return Math.round(v.reduce((a, l) => a + diffDays(l.end, l.start) + 1, 0) / v.length);
 }
 
 /* ── Navigation ── */
 function navigate(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  document.querySelectorAll('.nav-link, .bn-item').forEach(l => l.classList.remove('active'));
   document.getElementById(`page-${page}`).classList.add('active');
-  document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
+  document.querySelectorAll(`[data-page="${page}"]`).forEach(el => el.classList.add('active'));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
   if (page === 'calendar') renderCalendar();
   if (page === 'insights') renderInsights();
 }
 
-document.querySelectorAll('.nav-link').forEach(link => {
+document.querySelectorAll('.nav-link, .bn-item').forEach(link => {
   link.addEventListener('click', e => {
     e.preventDefault();
     navigate(link.dataset.page);
@@ -126,15 +101,221 @@ function showToast(msg) {
 /* ── Greeting ── */
 function greeting() {
   const h = new Date().getHours();
-  const name = state.user?.name ? `, ${state.user.name}` : ', Beautiful';
+  const name = state.user?.name ? `, ${state.user.name}` : '';
   if (h < 12) return `Good morning${name} 🌸`;
   if (h < 17) return `Good afternoon${name} 💕`;
   return `Good evening${name} 🌙`;
 }
 
+/* ── Dashboard ── */
+function initDashboard() {
+  if (!state.user) { showSetup(); return; }
+  if (state.todayLog?.date !== today()) {
+    state.todayLog = { date: today(), moods: [], symptoms: [] };
+    store.set('luna_today', state.todayLog);
+  }
+  document.getElementById('heroGreeting').textContent = greeting();
+  const info = cycleInfo();
+  if (!info) return;
+
+  const pct = Math.min(info.dayOfCycle / info.cycleLen, 1);
+  document.getElementById('ringProgress').style.strokeDashoffset = 502 * (1 - pct);
+  document.getElementById('ringDay').textContent = info.dayOfCycle;
+
+  document.getElementById('heroSub').textContent = info.daysUntil <= 0
+    ? 'Your period may have started today 🌹'
+    : info.daysUntil === 1
+      ? 'Your period is expected tomorrow 🌸'
+      : `Day ${info.dayOfCycle} of your cycle — you're doing amazing 💕`;
+
+  document.getElementById('nextPeriodVal').textContent = info.daysUntil <= 0 ? 'Today' : `In ${info.daysUntil} days`;
+  document.getElementById('phaseVal').textContent      = info.phase.replace(/\s\S+$/, '');
+  document.getElementById('phaseIcon').textContent     = info.phaseIcon;
+  const fs = addDays(info.lastStart, info.fertileStart);
+  const fe = addDays(info.lastStart, info.fertileEnd);
+  document.getElementById('fertileVal').textContent    = `${fmtShort(fs)} – ${fmtShort(fe)}`;
+  document.getElementById('cycleLenVal').textContent   = `${avgCycleLength()} days`;
+
+  document.getElementById('phaseName').textContent = info.phase;
+  document.getElementById('phaseDesc').textContent = info.phaseDesc;
+  document.getElementById('phaseTips').innerHTML   = info.phaseTips.map(t => `<li>${t}</li>`).join('');
+
+  restoreTodaySelections();
+}
+
+/* ── Mood & Symptom toggles ── */
+document.querySelectorAll('.mood-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const m = btn.dataset.mood, arr = state.todayLog.moods || [];
+    if (arr.includes(m)) { state.todayLog.moods = arr.filter(x => x !== m); btn.classList.remove('selected'); }
+    else { arr.push(m); state.todayLog.moods = arr; btn.classList.add('selected'); }
+  });
+});
+
+document.querySelectorAll('.symptom-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const s = btn.dataset.sym, arr = state.todayLog.symptoms || [];
+    if (arr.includes(s)) { state.todayLog.symptoms = arr.filter(x => x !== s); btn.classList.remove('selected'); }
+    else { arr.push(s); state.todayLog.symptoms = arr; btn.classList.add('selected'); }
+  });
+});
+
+document.getElementById('saveTodayBtn').addEventListener('click', () => {
+  store.set('luna_today', state.todayLog);
+  const all = store.get('luna_day_logs', {});
+  all[today()] = state.todayLog;
+  store.set('luna_day_logs', all);
+  showToast('Today\'s log saved! 💕✨');
+});
+
+function restoreTodaySelections() {
+  document.querySelectorAll('.mood-btn').forEach(b => b.classList.toggle('selected', state.todayLog.moods?.includes(b.dataset.mood)));
+  document.querySelectorAll('.symptom-btn').forEach(b => b.classList.toggle('selected', state.todayLog.symptoms?.includes(b.dataset.sym)));
+}
+
+/* ── Calendar ── */
+let calDate = new Date();
+
+function renderCalendar() {
+  const yr = calDate.getFullYear(), mo = calDate.getMonth();
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('calMonthTitle').textContent = `${MONTHS[mo]} ${yr}`;
+  const firstDay = new Date(yr, mo, 1).getDay();
+  const daysInMonth = new Date(yr, mo + 1, 0).getDate();
+  const periodDays = new Set(), fertileDays = new Set(), ovulDays = new Set(), predDays = new Set();
+
+  if (state.user) {
+    const info = cycleInfo();
+    if (info) {
+      state.logs.forEach(l => {
+        const end = l.end || addDays(l.start, info.periodLen - 1);
+        let d = l.start;
+        while (d <= end) { periodDays.add(d); d = addDays(d, 1); }
+      });
+      let predStart = info.nextPeriod;
+      for (let c = 0; c < 4; c++) {
+        let d = predStart, pe = addDays(predStart, info.periodLen - 1);
+        while (d <= pe) { predDays.add(d); d = addDays(d, 1); }
+        predStart = addDays(predStart, info.cycleLen);
+      }
+      [-info.cycleLen, 0, info.cycleLen].forEach(off => {
+        const base = addDays(info.lastStart, off);
+        for (let i = info.fertileStart; i <= info.fertileEnd; i++) fertileDays.add(addDays(base, i));
+        ovulDays.add(addDays(base, info.cycleLen - 14));
+      });
+    }
+  }
+
+  const td = today();
+  let html = '';
+  for (let i = 0; i < firstDay; i++) html += '<div class="cal-day empty"></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = `${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    let cls = 'cal-day';
+    if (ds === td)                cls += ' today';
+    if (ovulDays.has(ds))         cls += ' ovulation';
+    else if (fertileDays.has(ds)) cls += ' fertile';
+    if (periodDays.has(ds))       cls += ' period';
+    if (predDays.has(ds) && !periodDays.has(ds)) cls += ' predicted';
+    html += `<div class="${cls}">${d}</div>`;
+  }
+  document.getElementById('calDays').innerHTML = html;
+}
+
+document.getElementById('calPrev').addEventListener('click', () => { calDate.setMonth(calDate.getMonth()-1); renderCalendar(); });
+document.getElementById('calNext').addEventListener('click', () => { calDate.setMonth(calDate.getMonth()+1); renderCalendar(); });
+
+/* ── Log Period ── */
+document.getElementById('logPeriodBtn').addEventListener('click', () => {
+  const start = document.getElementById('startDateInput').value;
+  const end   = document.getElementById('endDateInput').value;
+  const flow  = document.getElementById('flowSelect').value;
+  const note  = document.getElementById('noteInput').value.trim();
+  if (!start) { showToast('Please enter your period start date! 💕'); return; }
+
+  const entry = { id: Date.now(), start, end: end || null, flow, note };
+  state.logs.unshift(entry);
+  store.set('luna_logs', state.logs);
+  if (!state.user.lastPeriod || start > state.user.lastPeriod) {
+    state.user.lastPeriod = start;
+    store.set('luna_user', state.user);
+  }
+  document.getElementById('startDateInput').value = '';
+  document.getElementById('endDateInput').value   = '';
+  document.getElementById('noteInput').value      = '';
+  renderLogHistory();
+  initDashboard();
+  showToast('Period logged successfully! 🌸');
+});
+
+function renderLogHistory() {
+  const list = document.getElementById('logList');
+  if (!state.logs.length) { list.innerHTML = '<p class="empty-msg">No periods logged yet. Start by logging above! 💕</p>'; return; }
+  const fe = { light:'🩸', medium:'🩸🩸', heavy:'🩸🩸🩸' };
+  list.innerHTML = state.logs.map(l => `
+    <div class="log-item">
+      <div class="log-item-icon">🌹</div>
+      <div class="log-item-info">
+        <div class="log-item-date">${fmt(l.start)} ${l.end ? `→ ${fmt(l.end)}` : '(ongoing)'}</div>
+        <div class="log-item-meta">${fe[l.flow]||'🩸'} ${l.flow?.charAt(0).toUpperCase()+l.flow?.slice(1)} flow${l.end?` · ${diffDays(l.end,l.start)+1} days`:''}${l.note?` · "${l.note}"`:''}
+        </div>
+      </div>
+      <button class="log-item-delete" onclick="deleteLog(${l.id})" aria-label="Delete">🗑️</button>
+    </div>
+  `).join('');
+}
+
+window.deleteLog = id => {
+  state.logs = state.logs.filter(l => l.id !== id);
+  store.set('luna_logs', state.logs);
+  renderLogHistory();
+  initDashboard();
+  showToast('Log removed.');
+};
+
+/* ── Insights ── */
+function renderInsights() {
+  const avgCyc = avgCycleLength(), avgPer = avgPeriodLength();
+  document.getElementById('avgCycleIns').textContent  = `${avgCyc} days`;
+  document.getElementById('avgPeriodIns').textContent = `${avgPer} days`;
+  document.getElementById('totalCyclesIns').textContent = state.logs.length;
+
+  let reg = '–';
+  if (state.logs.length >= 2) {
+    const s = [...state.logs].sort((a,b) => a.start.localeCompare(b.start));
+    const lens = []; for (let i=1;i<s.length;i++) lens.push(diffDays(s[i].start,s[i-1].start));
+    const v = lens.reduce((a,l)=>a+Math.abs(l-avgCyc),0)/lens.length;
+    reg = v<=2?'🌟 Very Regular':v<=5?'✅ Regular':v<=8?'⚠️ Somewhat Irregular':'🔄 Irregular';
+  }
+  document.getElementById('regularityIns').textContent = reg;
+
+  const bc = document.getElementById('barChart');
+  const sl = [...state.logs].sort((a,b)=>a.start.localeCompare(b.start));
+  if (sl.length < 2) { bc.innerHTML='<p class="empty-msg">Log at least 2 periods to see your cycle history 📈</p>'; }
+  else {
+    const items=[]; for(let i=1;i<sl.length;i++) items.push({l:fmtShort(sl[i].start),v:diffDays(sl[i].start,sl[i-1].start)});
+    const mx=Math.max(...items.map(x=>x.v),35);
+    bc.innerHTML=items.map(it=>`<div class="bar-item"><div class="bar-fill" style="height:${(it.v/mx)*100}px" data-val="${it.v}d"></div><div class="bar-label">${it.l}</div></div>`).join('');
+  }
+
+  const sc={}, mc={};
+  const symLabels={cramps:'🔴 Cramps',headache:'🤕 Headache',bloating:'💨 Bloating',backpain:'🫀 Back Pain',spotting:'💧 Spotting',acne:'✨ Acne',tender:'🩷 Breast Tenderness',cravings:'🍫 Cravings'};
+  const all = store.get('luna_day_logs',{});
+  Object.values(all).forEach(dl=>{
+    (dl.symptoms||[]).forEach(s=>sc[s]=(sc[s]||0)+1);
+    (dl.moods||[]).forEach(m=>mc[m]=(mc[m]||0)+1);
+  });
+  (state.todayLog?.symptoms||[]).forEach(s=>sc[s]=(sc[s]||0)+1);
+  (state.todayLog?.moods||[]).forEach(m=>mc[m]=(mc[m]||0)+1);
+
+  const se=document.getElementById('symptomBubbles'), sorted=Object.entries(sc).sort((a,b)=>b[1]-a[1]);
+  se.innerHTML=sorted.length?sorted.map(([s,c])=>`<span class="bubble sym">${symLabels[s]||s} <strong>×${c}</strong></span>`).join(''):'<p class="empty-msg">Log some symptoms to see your patterns! 🌷</p>';
+  const me=document.getElementById('moodBubbles'), sortedM=Object.entries(mc).sort((a,b)=>b[1]-a[1]);
+  me.innerHTML=sortedM.length?sortedM.map(([m,c])=>`<span class="bubble mood">${m} <strong>×${c}</strong></span>`).join(''):'<p class="empty-msg">Log some moods to see your patterns! 🌷</p>';
+}
+
 /* ── Setup Modal ── */
 const setupModal = document.getElementById('setupModal');
-
 function showSetup() { setupModal.classList.remove('hidden'); }
 function hideSetup() { setupModal.classList.add('hidden'); }
 
@@ -143,9 +324,7 @@ document.getElementById('setupSaveBtn').addEventListener('click', () => {
   const lastPeriod = document.getElementById('setupLastPeriod').value;
   const cycleLen   = parseInt(document.getElementById('setupCycleLen').value) || 28;
   const periodLen  = parseInt(document.getElementById('setupPeriodLen').value) || 5;
-
   if (!lastPeriod) { showToast('Please enter your last period start date! 💕'); return; }
-
   state.user = { name, lastPeriod, cycleLen, periodLen };
   store.set('luna_user', state.user);
   hideSetup();
@@ -155,418 +334,45 @@ document.getElementById('setupSaveBtn').addEventListener('click', () => {
 
 /* ── Settings Modal ── */
 const settingsModal = document.getElementById('settingsModal');
-
 function openSettings() {
   if (!state.user) return;
-  // Pre-fill current values
   document.getElementById('editName').value       = state.user.name       || '';
   document.getElementById('editLastPeriod').value = state.user.lastPeriod || '';
   document.getElementById('editCycleLen').value   = state.user.cycleLen   || 28;
   document.getElementById('editPeriodLen').value  = state.user.periodLen  || 5;
   settingsModal.classList.remove('hidden');
 }
+function closeSettings() { settingsModal.classList.add('hidden'); }
 
-function closeSettings() {
-  settingsModal.classList.add('hidden');
-}
-
-// Open on avatar click
 document.getElementById('navAvatar').addEventListener('click', openSettings);
+document.getElementById('settingsCancelBtn').addEventListener('click', closeSettings);
+settingsModal.addEventListener('click', e => { if (e.target === settingsModal) closeSettings(); });
 
-// Save changes
 document.getElementById('settingsSaveBtn').addEventListener('click', () => {
   const name       = document.getElementById('editName').value.trim() || 'Beautiful';
   const lastPeriod = document.getElementById('editLastPeriod').value;
   const cycleLen   = parseInt(document.getElementById('editCycleLen').value) || 28;
   const periodLen  = parseInt(document.getElementById('editPeriodLen').value) || 5;
-
   if (!lastPeriod) { showToast('Please enter your last period start date! 💕'); return; }
-
   state.user = { name, lastPeriod, cycleLen, periodLen };
   store.set('luna_user', state.user);
   closeSettings();
   initDashboard();
-  showToast(`Settings saved! Welcome back, ${name} 🌙✨`);
+  showToast(`Settings saved! Hey ${name} 🌙✨`);
 });
 
-// Cancel
-document.getElementById('settingsCancelBtn').addEventListener('click', closeSettings);
-
-// Close on backdrop click
-settingsModal.addEventListener('click', (e) => {
-  if (e.target === settingsModal) closeSettings();
-});
-
-// Reset All Data
 document.getElementById('resetDataBtn').addEventListener('click', () => {
-  const confirmed = confirm('⚠️ This will delete ALL your data (logs, settings, moods). Are you sure?');
-  if (!confirmed) return;
-  localStorage.removeItem('luna_user');
-  localStorage.removeItem('luna_logs');
-  localStorage.removeItem('luna_today');
-  localStorage.removeItem('luna_day_logs');
-  state.user     = null;
-  state.logs     = [];
-  state.todayLog = {};
-  closeSettings();
-  renderLogHistory();
-  showSetup();
-  showToast('All data reset. Starting fresh! 🌱');
+  if (!confirm('Delete ALL data? This cannot be undone.')) return;
+  ['luna_user','luna_logs','luna_today','luna_day_logs','luna_reminder_sent_for','luna_notif_prompt_shown'].forEach(k=>localStorage.removeItem(k));
+  state.user=null; state.logs=[]; state.todayLog={};
+  closeSettings(); renderLogHistory(); showSetup();
+  showToast('Reset complete 🌱');
 });
 
-/* ── Dashboard Init ── */
-function initDashboard() {
-  if (!state.user) { showSetup(); return; }
-
-  // Today's log reset
-  if (state.todayLog?.date !== today()) {
-    state.todayLog = { date: today(), moods: [], symptoms: [] };
-    store.set('luna_today', state.todayLog);
-  }
-
-  document.getElementById('heroGreeting').textContent = greeting();
-
-  const info = cycleInfo();
-  if (!info) return;
-
-  // Ring
-  const pct = Math.min(info.dayOfCycle / info.cycleLen, 1);
-  const circumference = 2 * Math.PI * 80;
-  document.getElementById('ringProgress').style.strokeDashoffset = circumference * (1 - pct);
-  document.getElementById('ringDay').textContent = info.dayOfCycle;
-
-  // Hero sub
-  if (info.daysUntil <= 0) {
-    document.getElementById('heroSub').textContent = 'Your period may have started today 🌹';
-  } else if (info.daysUntil === 1) {
-    document.getElementById('heroSub').textContent = 'Your period is expected tomorrow 🌸';
-  } else {
-    document.getElementById('heroSub').textContent = `Day ${info.dayOfCycle} of your cycle — you're doing amazing 💕`;
-  }
-
-  // Stats
-  document.getElementById('nextPeriodVal').textContent = info.daysUntil <= 0 ? 'Today' : `In ${info.daysUntil} days`;
-  document.getElementById('phaseVal').textContent = info.phase.replace(/\s[^\s]+$/, '');
-  document.getElementById('phaseIcon').textContent = info.phaseIcon;
-
-  const fertileStartDate = addDays(info.lastStart, info.fertileStart);
-  const fertileEndDate   = addDays(info.lastStart, info.fertileEnd);
-  document.getElementById('fertileVal').textContent = `${fmtShort(fertileStartDate)} – ${fmtShort(fertileEndDate)}`;
-  document.getElementById('cycleLenVal').textContent = `${avgCycleLength()} days`;
-
-  // Phase card
-  document.getElementById('phaseName').textContent = info.phase;
-  document.getElementById('phaseDesc').textContent = info.phaseDesc;
-  const tipsList = document.getElementById('phaseTips');
-  tipsList.innerHTML = info.phaseTips.map(t => `<li>${t}</li>`).join('');
-
-  // Restore today's log selections
-  restoreTodaySelections();
-}
-
-/* ── Mood & Symptom Buttons ── */
-document.querySelectorAll('.mood-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const mood = btn.dataset.mood;
-    const moods = state.todayLog.moods;
-    if (moods.includes(mood)) {
-      state.todayLog.moods = moods.filter(m => m !== mood);
-      btn.classList.remove('selected');
-    } else {
-      state.todayLog.moods.push(mood);
-      btn.classList.add('selected');
-    }
-  });
-});
-
-document.querySelectorAll('.symptom-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const sym = btn.dataset.sym;
-    const symptoms = state.todayLog.symptoms;
-    if (symptoms.includes(sym)) {
-      state.todayLog.symptoms = symptoms.filter(s => s !== sym);
-      btn.classList.remove('selected');
-    } else {
-      state.todayLog.symptoms.push(sym);
-      btn.classList.add('selected');
-    }
-  });
-});
-
-document.getElementById('saveTodayBtn').addEventListener('click', () => {
-  store.set('luna_today', state.todayLog);
-  showToast('Today\'s log saved! 💕✨');
-});
-
-function restoreTodaySelections() {
-  document.querySelectorAll('.mood-btn').forEach(btn => {
-    btn.classList.toggle('selected', state.todayLog.moods?.includes(btn.dataset.mood));
-  });
-  document.querySelectorAll('.symptom-btn').forEach(btn => {
-    btn.classList.toggle('selected', state.todayLog.symptoms?.includes(btn.dataset.sym));
-  });
-}
-
-/* ── Log Period ── */
-document.getElementById('logPeriodBtn').addEventListener('click', () => {
-  const start = document.getElementById('startDateInput').value;
-  const end   = document.getElementById('endDateInput').value;
-  const flow  = document.getElementById('flowSelect').value;
-  const note  = document.getElementById('noteInput').value.trim();
-
-  if (!start) { showToast('Please enter your period start date! 💕'); return; }
-
-  const entry = { id: Date.now(), start, end: end || null, flow, note };
-  state.logs.unshift(entry);
-  store.set('luna_logs', state.logs);
-
-  // Update user's lastPeriod if this is more recent
-  if (!state.user.lastPeriod || start > state.user.lastPeriod) {
-    state.user.lastPeriod = start;
-    store.set('luna_user', state.user);
-  }
-
-  // Clear form
-  document.getElementById('startDateInput').value = '';
-  document.getElementById('endDateInput').value   = '';
-  document.getElementById('noteInput').value      = '';
-
-  renderLogHistory();
-  initDashboard();
-  showToast('Period logged successfully! 🌸');
-});
-
-function renderLogHistory() {
-  const list = document.getElementById('logList');
-  if (!state.logs.length) {
-    list.innerHTML = '<p class="empty-msg">No periods logged yet. Start by logging above! 💕</p>';
-    return;
-  }
-  const flowEmoji = { light: '🩸', medium: '🩸🩸', heavy: '🩸🩸🩸' };
-  list.innerHTML = state.logs.map(l => `
-    <div class="log-item" id="log-${l.id}">
-      <div class="log-item-icon">🌹</div>
-      <div class="log-item-info">
-        <div class="log-item-date">${fmt(l.start)} ${l.end ? `→ ${fmt(l.end)}` : '(ongoing)'}</div>
-        <div class="log-item-meta">
-          ${flowEmoji[l.flow] || '🩸'} ${l.flow?.charAt(0).toUpperCase() + l.flow?.slice(1)} flow
-          ${l.end ? ` · ${diffDays(l.end, l.start) + 1} days` : ''}
-          ${l.note ? ` · "${l.note}"` : ''}
-        </div>
-      </div>
-      <button class="log-item-delete" onclick="deleteLog(${l.id})" title="Delete" aria-label="Delete log">🗑️</button>
-    </div>
-  `).join('');
-}
-
-window.deleteLog = (id) => {
-  state.logs = state.logs.filter(l => l.id !== id);
-  store.set('luna_logs', state.logs);
-  renderLogHistory();
-  initDashboard();
-  showToast('Log removed.');
-};
-
-/* ── Calendar ── */
-let calDate = new Date();
-
-function renderCalendar() {
-  const year  = calDate.getFullYear();
-  const month = calDate.getMonth();
-  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  document.getElementById('calMonthTitle').textContent = `${monthNames[month]} ${year}`;
-
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  // Build sets of colored dates
-  const periodDays   = new Set();
-  const fertileDays  = new Set();
-  const ovulationDays = new Set();
-  const predictedDays = new Set();
-
-  if (state.user) {
-    const info = cycleInfo();
-    if (info) {
-      // Mark actual logged periods
-      state.logs.forEach(l => {
-        const end = l.end || addDays(l.start, (state.user.periodLen - 1));
-        let d = l.start;
-        while (d <= end) { periodDays.add(d); d = addDays(d, 1); }
-      });
-
-      // Predicted future cycles (next 3)
-      let predStart = info.nextPeriod;
-      for (let c = 0; c < 3; c++) {
-        let d = predStart;
-        const predEnd = addDays(predStart, info.periodLen - 1);
-        while (d <= predEnd) { predictedDays.add(d); d = addDays(d, 1); }
-        predStart = addDays(predStart, info.cycleLen);
-      }
-
-      // Fertile & ovulation for current + next cycle
-      [-info.cycleLen, 0, info.cycleLen].forEach(offset => {
-        const baseStart = addDays(info.lastStart, offset);
-        for (let i = info.fertileStart; i <= info.fertileEnd; i++) {
-          fertileDays.add(addDays(baseStart, i));
-        }
-        ovulationDays.add(addDays(baseStart, info.cycleLen - 14));
-      });
-    }
-  }
-
-  const todayStr = today();
-  let html = '';
-
-  // Empty cells for offset
-  for (let i = 0; i < firstDay; i++) html += '<div class="cal-day empty"></div>';
-
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    let cls = 'cal-day';
-    if (dateStr === todayStr)      cls += ' today';
-    if (ovulationDays.has(dateStr)) cls += ' ovulation';
-    else if (fertileDays.has(dateStr)) cls += ' fertile';
-    if (periodDays.has(dateStr))   cls += ' period';
-    if (predictedDays.has(dateStr) && !periodDays.has(dateStr)) cls += ' predicted';
-
-    html += `<div class="${cls}" title="${dateStr}">${d}</div>`;
-  }
-
-  document.getElementById('calDays').innerHTML = html;
-}
-
-document.getElementById('calPrev').addEventListener('click', () => {
-  calDate.setMonth(calDate.getMonth() - 1);
-  renderCalendar();
-});
-document.getElementById('calNext').addEventListener('click', () => {
-  calDate.setMonth(calDate.getMonth() + 1);
-  renderCalendar();
-});
-
-/* ── Insights ── */
-function renderInsights() {
-  const avgCyc = avgCycleLength();
-  const avgPer = avgPeriodLength();
-  const total  = state.logs.length;
-
-  document.getElementById('avgCycleIns').textContent  = `${avgCyc} days`;
-  document.getElementById('avgPeriodIns').textContent = `${avgPer} days`;
-  document.getElementById('totalCyclesIns').textContent = total;
-
-  // Regularity
-  let reg = '–';
-  if (state.logs.length >= 2) {
-    const sorted = [...state.logs].sort((a,b) => a.start.localeCompare(b.start));
-    const lengths = [];
-    for (let i = 1; i < sorted.length; i++) lengths.push(diffDays(sorted[i].start, sorted[i-1].start));
-    const variance = lengths.reduce((acc, l) => acc + Math.abs(l - avgCyc), 0) / lengths.length;
-    if (variance <= 2)  reg = '🌟 Very Regular';
-    else if (variance <= 5) reg = '✅ Regular';
-    else if (variance <= 8) reg = '⚠️ Somewhat Irregular';
-    else reg = '🔄 Irregular';
-  }
-  document.getElementById('regularityIns').textContent = reg;
-
-  // Bar chart
-  renderBarChart();
-
-  // Symptom bubbles
-  renderBubbles();
-}
-
-function renderBarChart() {
-  const container = document.getElementById('barChart');
-  if (state.logs.length < 2) {
-    container.innerHTML = '<p class="empty-msg">Log at least 2 periods to see your cycle history 📈</p>';
-    return;
-  }
-  const sorted = [...state.logs].sort((a,b) => a.start.localeCompare(b.start));
-  const items = [];
-  for (let i = 1; i < sorted.length; i++) {
-    items.push({
-      label: fmtShort(sorted[i].start),
-      val: diffDays(sorted[i].start, sorted[i-1].start),
-    });
-  }
-  const maxVal = Math.max(...items.map(x => x.val), 35);
-  container.innerHTML = items.map(it => `
-    <div class="bar-item">
-      <div class="bar-fill" style="height:${(it.val/maxVal)*100}px" data-val="${it.val}d"></div>
-      <div class="bar-label">${it.label}</div>
-    </div>
-  `).join('');
-}
-
-function renderBubbles() {
-  // Collect all symptoms & moods from todayLog and any logged period notes
-  const symCount = {};
-  const moodCount = {};
-
-  // Today
-  (state.todayLog?.symptoms || []).forEach(s => symCount[s] = (symCount[s] || 0) + 1);
-  (state.todayLog?.moods || []).forEach(m => moodCount[m] = (moodCount[m] || 0) + 1);
-
-  // All saved daily logs (stored by date)
-  const allDayLogs = store.get('luna_day_logs', {});
-  Object.values(allDayLogs).forEach(dl => {
-    (dl.symptoms || []).forEach(s => symCount[s] = (symCount[s] || 0) + 1);
-    (dl.moods || []).forEach(m => moodCount[m] = (moodCount[m] || 0) + 1);
-  });
-
-  const symLabels = {
-    cramps: '🔴 Cramps', headache: '🤕 Headache', bloating: '💨 Bloating',
-    backpain: '🫀 Back Pain', spotting: '💧 Spotting', acne: '✨ Acne',
-    tender: '🩷 Breast Tenderness', cravings: '🍫 Cravings',
-  };
-
-  const symEl = document.getElementById('symptomBubbles');
-  const sorted = Object.entries(symCount).sort((a,b) => b[1]-a[1]);
-  if (!sorted.length) {
-    symEl.innerHTML = '<p class="empty-msg">Log some symptoms to see your patterns! 🌷</p>';
-  } else {
-    symEl.innerHTML = sorted.map(([s, c]) =>
-      `<span class="bubble sym">${symLabels[s] || s} <strong>×${c}</strong></span>`
-    ).join('');
-  }
-
-  const moodEl = document.getElementById('moodBubbles');
-  const sortedM = Object.entries(moodCount).sort((a,b) => b[1]-a[1]);
-  if (!sortedM.length) {
-    moodEl.innerHTML = '<p class="empty-msg">Log some moods to see your patterns! 🌷</p>';
-  } else {
-    moodEl.innerHTML = sortedM.map(([m, c]) =>
-      `<span class="bubble mood">${m} <strong>×${c}</strong></span>`
-    ).join('');
-  }
-}
-
-/* ── Save Today with persistence across days ── */
-document.getElementById('saveTodayBtn').addEventListener('click', () => {
-  store.set('luna_today', state.todayLog);
-
-  // Also archive in luna_day_logs
-  const allDayLogs = store.get('luna_day_logs', {});
-  allDayLogs[today()] = state.todayLog;
-  store.set('luna_day_logs', allDayLogs);
-
-  showToast('Today\'s log saved! 💕✨');
-}, { once: false });
-
-/* ── Set default date inputs to today ── */
-function initDateInputs() {
-  const t = today();
-  document.getElementById('startDateInput').value = t;
-  document.getElementById('endDateInput').value   = t;
-  document.getElementById('setupLastPeriod').value = t;
-}
-
-/* ════════════════════════════════════════════════
-   🌹 PERIOD REMINDER NOTIFICATION SYSTEM
-   ════════════════════════════════════════════════ */
-
-const ROMANTIC_SENTENCES = [
+/* ════════════════════════════════════
+   🌹 NOTIFICATION SYSTEM
+════════════════════════════════════ */
+const ROMANTIC = [
   "Your body is preparing for its monthly rhythm 🌹 Rest a little more, drink warm tea, and let me take care of you…",
   "In 2 days, your period is arriving, my love 💕 Please be extra gentle with yourself — you deserve all the comfort in the world.",
   "Just a soft reminder that your period is coming soon 🌸 Stock up on your favorite chocolates and let yourself rest.",
@@ -599,174 +405,93 @@ const ROMANTIC_SENTENCES = [
   "A rose petal note from Luna 🌹 Your period is 2 days away. You are beautiful in every phase of your cycle."
 ];
 
-function getRandomRomanticSentence() {
-  return ROMANTIC_SENTENCES[Math.floor(Math.random() * ROMANTIC_SENTENCES.length)];
-}
+const randRomantic = () => ROMANTIC[Math.floor(Math.random() * ROMANTIC.length)];
 
-/* ── Service Worker Registration ── */
 async function registerSW() {
   if ('serviceWorker' in navigator) {
-    try {
-      await navigator.serviceWorker.register('service-worker.js');
-    } catch (e) {
-      console.warn('SW registration failed (file:// protocol needs a local server):', e);
-    }
+    try { await navigator.serviceWorker.register('service-worker.js'); } catch(e) { /* needs https */ }
   }
 }
 
-/* ── Request Notification Permission ── */
 async function requestNotifPermission() {
   if (!('Notification' in window)) return 'unsupported';
-  if (Notification.permission === 'granted') return 'granted';
-  if (Notification.permission === 'denied') return 'denied';
-  const result = await Notification.requestPermission();
-  return result;
+  if (Notification.permission !== 'default') return Notification.permission;
+  return await Notification.requestPermission();
 }
 
-/* ── Show Browser Push Notification ── */
-async function sendBrowserNotification(title, body) {
-  if (!('Notification' in window)) return;
-  if (Notification.permission !== 'granted') return;
-
-  // Try via Service Worker first (works in background)
+async function sendBrowserNotif(title, body) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
   if ('serviceWorker' in navigator) {
     const reg = await navigator.serviceWorker.getRegistration();
-    if (reg) {
-      reg.showNotification(title, {
-        body,
-        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌙</text></svg>',
-        tag: 'luna-period-reminder',
-        renotify: true,
-        requireInteraction: true,
-        vibrate: [300, 100, 300, 100, 300],
-      });
-      return;
-    }
+    if (reg) { reg.showNotification(title, { body, tag:'luna-period', renotify:true, requireInteraction:true, vibrate:[300,100,300] }); return; }
   }
-  // Fallback: direct Notification
-  new Notification(title, { body, icon: '🌙' });
+  new Notification(title, { body });
 }
 
-/* ── In-App Reminder Banner ── */
-function showReminderBanner(msg, daysUntil) {
+function showReminderBanner(msg, days) {
   const banner = document.getElementById('reminderBanner');
   if (!banner) return;
-
-  const emojis = ['🌹', '💕', '🌸', '🌙', '💗', '🌺', '🩷', '💌', '🌷', '🫶'];
-  document.getElementById('reminderEmoji').textContent = emojis[Math.floor(Math.random() * emojis.length)];
-  document.getElementById('reminderTitle').textContent =
-    daysUntil === 2 ? '💌 Period Reminder — 2 Days Away' : '🌹 Your Period is Almost Here';
-  document.getElementById('reminderMsg').textContent = msg;
-
+  const emojis = ['🌹','💕','🌸','🌙','💗','🌺','🩷','💌','🌷','🫶'];
+  document.getElementById('reminderEmoji').textContent = emojis[Math.floor(Math.random()*emojis.length)];
+  document.getElementById('reminderTitle').textContent = days===2 ? '💌 Period Reminder — 2 Days Away' : '🌹 Your Period is Almost Here';
+  document.getElementById('reminderMsg').textContent   = msg;
   banner.classList.remove('hidden');
-  // Trigger animation after paint
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => banner.classList.add('show'));
-  });
-}
-
-function hideReminderBanner() {
-  const banner = document.getElementById('reminderBanner');
-  banner.classList.remove('show');
-  setTimeout(() => banner.classList.add('hidden'), 500);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>banner.classList.add('show')));
 }
 
 document.getElementById('reminderClose').addEventListener('click', () => {
-  hideReminderBanner();
-  // Don't show again this session
+  const b = document.getElementById('reminderBanner');
+  b.classList.remove('show');
+  setTimeout(()=>b.classList.add('hidden'),500);
   sessionStorage.setItem('luna_reminder_dismissed', today());
 });
 
-/* ── Notification Permission Prompt (shown inside dashboard) ── */
 function showNotifPromptCard() {
-  if (Notification.permission === 'granted') return;
-  if (Notification.permission === 'denied') return;
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'default') return;
   if (store.get('luna_notif_prompt_shown')) return;
-
-  const heroSection = document.querySelector('#page-dashboard .stats-grid');
-  if (!heroSection) return;
-
-  const existing = document.getElementById('notifPromptCard');
-  if (existing) return;
-
+  const grid = document.querySelector('.stats-grid');
+  if (!grid || document.getElementById('notifPromptCard')) return;
   const card = document.createElement('div');
-  card.className = 'notif-prompt';
-  card.id = 'notifPromptCard';
-  card.innerHTML = `
-    <div class="notif-prompt-text">
-      <strong>🔔 Enable Period Reminders</strong>
-      Get a romantic notification 2 days before your period, even when the tab is in background.
-    </div>
-    <button class="notif-allow-btn" id="notifAllowBtn">Allow 💕</button>
-  `;
-
-  heroSection.insertAdjacentElement('beforebegin', card);
-
-  document.getElementById('notifAllowBtn').addEventListener('click', async () => {
-    const result = await requestNotifPermission();
-    card.remove();
-    store.set('luna_notif_prompt_shown', true);
-    if (result === 'granted') {
-      showToast('Notifications enabled! 💕 You\'ll get a reminder 2 days before your period.');
-      await registerSW();
-    } else {
-      showToast('Notifications blocked. You\'ll still see in-app reminders! 🌸');
-    }
+  card.className='notif-prompt'; card.id='notifPromptCard';
+  card.innerHTML=`<div class="notif-prompt-text"><strong>🔔 Enable Period Reminders</strong>Get a romantic notification 2 days before your period.</div><button class="notif-allow-btn" id="notifAllowBtn">Allow 💕</button>`;
+  grid.insertAdjacentElement('beforebegin', card);
+  document.getElementById('notifAllowBtn').addEventListener('click', async()=>{
+    const r = await requestNotifPermission();
+    card.remove(); store.set('luna_notif_prompt_shown', true);
+    showToast(r==='granted' ? 'Reminders enabled! 💕' : 'You\'ll still see in-app reminders 🌸');
+    if (r==='granted') await registerSW();
   });
 }
 
-/* ── Core Reminder Check (runs on every page load) ── */
-async function checkAndFireReminder() {
+async function checkReminder() {
   if (!state.user) return;
-
-  const info = cycleInfo();
-  if (!info) return;
-
-  const daysUntil = info.daysUntil;
-
-  // Only trigger when exactly 2 days away (or 1 day as backup)
-  if (daysUntil !== 2 && daysUntil !== 1) return;
-
-  // Avoid re-showing within the same day
-  const lastShown = sessionStorage.getItem('luna_reminder_dismissed');
-  if (lastShown === today()) return;
-
-  const alreadyNotified = store.get('luna_reminder_sent_for');
-  if (alreadyNotified === info.nextPeriod) return;
-
-  // Pick a random romantic sentence
-  const sentence = getRandomRomanticSentence();
-
-  // Mark as notified for this cycle
+  const info = cycleInfo(); if (!info) return;
+  if (info.daysUntil!==2 && info.daysUntil!==1) return;
+  if (sessionStorage.getItem('luna_reminder_dismissed')===today()) return;
+  if (store.get('luna_reminder_sent_for')===info.nextPeriod) return;
+  const sentence = randRomantic();
   store.set('luna_reminder_sent_for', info.nextPeriod);
-
-  // 1️⃣ Show in-app banner
-  showReminderBanner(sentence, daysUntil);
-
-  // 2️⃣ Send browser push notification
-  const notifTitle = daysUntil === 2
-    ? '🌹 Luna — Period in 2 Days, My Love'
-    : '🌸 Luna — Your Period is Tomorrow';
-
-  await sendBrowserNotification(notifTitle, sentence.replace(/[🌹💕🌸🌙💗🌺🩷💌🌷🫶💫🌕🌟]/g, '').trim());
+  showReminderBanner(sentence, info.daysUntil);
+  const title = info.daysUntil===2 ? '🌹 Luna — Period in 2 Days, My Love' : '🌸 Luna — Your Period is Tomorrow';
+  await sendBrowserNotif(title, sentence.replace(/[🌹💕🌸🌙💗🌺🩷💌🌷🫶💫🌕🌟]/gu,'').trim());
 }
 
 /* ── Boot ── */
 async function boot() {
-  initDateInputs();
+  document.getElementById('startDateInput').value  = today();
+  document.getElementById('endDateInput').value    = today();
+  document.getElementById('setupLastPeriod').value = today();
   renderLogHistory();
   await registerSW();
-
   if (!state.user) {
     showSetup();
   } else {
     hideSetup();
     initDashboard();
     showNotifPromptCard();
-    // Small delay so dashboard renders first
-    setTimeout(checkAndFireReminder, 800);
+    setTimeout(checkReminder, 800);
   }
 }
 
 boot();
-

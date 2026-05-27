@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Luna – Your Cycle, Your Story</title>
   <meta name="description" content="Luna is a beautiful, private menstrual cycle tracker. Log your period, predict your next cycle, track symptoms, and understand your body better." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -252,7 +252,6 @@
         </div>
       </div>
 
-      <!-- Chart: Cycle Length History -->
       <div class="chart-card">
         <h3 class="section-title">Cycle Length History</h3>
         <div class="bar-chart" id="barChart">
@@ -260,7 +259,6 @@
         </div>
       </div>
 
-      <!-- Common Symptoms -->
       <div class="section-card">
         <h3 class="section-title">Most Common Symptoms 🩺</h3>
         <div class="symptom-bubbles" id="symptomBubbles">
@@ -268,7 +266,6 @@
         </div>
       </div>
 
-      <!-- Mood Patterns -->
       <div class="section-card">
         <h3 class="section-title">Mood Patterns 🌈</h3>
         <div class="mood-bubbles" id="moodBubbles">
@@ -278,6 +275,26 @@
     </section>
 
   </main>
+
+  <!-- ===== BOTTOM NAV (Android) ===== -->
+  <nav class="bottom-nav">
+    <a class="bn-item active" href="#" data-page="dashboard">
+      <span class="bn-icon">🏠</span>
+      <span class="bn-label">Home</span>
+    </a>
+    <a class="bn-item" href="#" data-page="calendar">
+      <span class="bn-icon">🗓️</span>
+      <span class="bn-label">Calendar</span>
+    </a>
+    <a class="bn-item" href="#" data-page="log">
+      <span class="bn-icon">📝</span>
+      <span class="bn-label">Log</span>
+    </a>
+    <a class="bn-item" href="#" data-page="insights">
+      <span class="bn-icon">📊</span>
+      <span class="bn-label">Insights</span>
+    </a>
+  </nav>
 
   <!-- ===== PERIOD REMINDER BANNER ===== -->
   <div class="reminder-banner hidden" id="reminderBanner">
@@ -302,7 +319,6 @@
         <h2 class="modal-title">Settings</h2>
         <p class="modal-sub">Update your profile anytime 💕</p>
       </div>
-
       <div class="form-group">
         <label class="form-label" for="editName">Your Name</label>
         <input type="text" id="editName" class="form-input" placeholder="e.g. Lily" />
@@ -319,12 +335,10 @@
         <label class="form-label" for="editPeriodLen">Average Period Length (days)</label>
         <input type="number" id="editPeriodLen" class="form-input" min="2" max="10" />
       </div>
-
       <div class="settings-actions">
         <button class="save-btn modal-btn" id="settingsSaveBtn">Save Changes 🌸</button>
         <button class="cancel-btn" id="settingsCancelBtn">Cancel</button>
       </div>
-
       <div class="danger-zone">
         <p class="danger-label">⚠️ Danger Zone</p>
         <button class="danger-btn" id="resetDataBtn">Reset All Data 🗑️</button>
