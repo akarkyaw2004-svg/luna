@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Luna – Your Cycle, Your Story</title>
+  <meta name="description" content="Luna is a beautiful, private menstrual cycle tracker. Log your period, predict your next cycle, track symptoms, and understand your body better." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#f472b6" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Luna" />
+</head>
+<body>
+
+  <!-- ===== NAVIGATION ===== -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-inner">
+      <div class="nav-logo">
+        <span class="logo-icon">🌙</span>
+        <span class="logo-text">Luna</span>
+      </div>
+      <div class="nav-links">
+        <a href="#dashboard" class="nav-link active" data-page="dashboard">Dashboard</a>
+        <a href="#calendar" class="nav-link" data-page="calendar">Calendar</a>
+        <a href="#log" class="nav-link" data-page="log">Log</a>
+        <a href="#insights" class="nav-link" data-page="insights">Insights</a>
+      </div>
+      <button class="nav-avatar" id="navAvatar" title="Settings ⚙️" aria-label="Open settings">
+        <span>💕</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ===== MAIN APP ===== -->
+  <main class="app-main">
+
+    <!-- ======= PAGE: DASHBOARD ======= -->
+    <section class="page active" id="page-dashboard">
+
+      <!-- Hero Banner -->
+      <div class="hero-banner">
+        <div class="hero-orb orb1"></div>
+        <div class="hero-orb orb2"></div>
+        <div class="hero-orb orb3"></div>
+        <div class="hero-content">
+          <p class="hero-greeting" id="heroGreeting">Good evening, Beautiful 🌸</p>
+          <h1 class="hero-title">Your Cycle,<br/><em>Your Story</em></h1>
+          <p class="hero-sub" id="heroSub">Loading your data…</p>
+        </div>
+        <div class="cycle-ring-wrap">
+          <div class="cycle-ring" id="cycleRing">
+            <svg class="ring-svg" viewBox="0 0 200 200">
+              <defs>
+                <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#f472b6"/>
+                  <stop offset="100%" style="stop-color:#a78bfa"/>
+                </linearGradient>
+              </defs>
+              <circle cx="100" cy="100" r="80" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="12"/>
+              <circle id="ringProgress" cx="100" cy="100" r="80" fill="none" stroke="url(#ringGrad)" stroke-width="12"
+                stroke-linecap="round" stroke-dasharray="502" stroke-dashoffset="502"
+                transform="rotate(-90 100 100)"/>
+            </svg>
+            <div class="ring-center">
+              <span class="ring-day" id="ringDay">–</span>
+              <span class="ring-label">Day</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="stats-grid">
+        <div class="stat-card" id="statNextPeriod">
+          <div class="stat-icon">🔮</div>
+          <div class="stat-info">
+            <span class="stat-value" id="nextPeriodVal">–</span>
+            <span class="stat-label">Next Period</span>
+          </div>
+        </div>
+        <div class="stat-card" id="statPhase">
+          <div class="stat-icon" id="phaseIcon">🌑</div>
+          <div class="stat-info">
+            <span class="stat-value" id="phaseVal">–</span>
+            <span class="stat-label">Current Phase</span>
+          </div>
+        </div>
+        <div class="stat-card" id="statFertile">
+          <div class="stat-icon">🌸</div>
+          <div class="stat-info">
+            <span class="stat-value" id="fertileVal">–</span>
+            <span class="stat-label">Fertile Window</span>
+          </div>
+        </div>
+        <div class="stat-card" id="statCycleLen">
+          <div class="stat-icon">📅</div>
+          <div class="stat-info">
+            <span class="stat-value" id="cycleLenVal">–</span>
+            <span class="stat-label">Avg. Cycle Length</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Today's Mood + Symptoms -->
+      <div class="section-card">
+        <h2 class="section-title">How are you feeling today? 💖</h2>
+        <div class="mood-grid" id="moodGrid">
+          <button class="mood-btn" data-mood="😊" id="mood-happy">😊 Happy</button>
+          <button class="mood-btn" data-mood="😔" id="mood-sad">😔 Sad</button>
+          <button class="mood-btn" data-mood="😤" id="mood-irritable">😤 Irritable</button>
+          <button class="mood-btn" data-mood="😴" id="mood-tired">😴 Tired</button>
+          <button class="mood-btn" data-mood="🤗" id="mood-loved">🤗 Loved</button>
+          <button class="mood-btn" data-mood="😰" id="mood-anxious">😰 Anxious</button>
+          <button class="mood-btn" data-mood="⚡" id="mood-energetic">⚡ Energetic</button>
+          <button class="mood-btn" data-mood="🤢" id="mood-nauseous">🤢 Nauseous</button>
+        </div>
+
+        <h3 class="sub-section-title">Symptoms</h3>
+        <div class="symptom-grid" id="symptomGrid">
+          <button class="symptom-btn" data-sym="cramps" id="sym-cramps">🔴 Cramps</button>
+          <button class="symptom-btn" data-sym="headache" id="sym-headache">🤕 Headache</button>
+          <button class="symptom-btn" data-sym="bloating" id="sym-bloating">💨 Bloating</button>
+          <button class="symptom-btn" data-sym="backpain" id="sym-backpain">🫀 Back Pain</button>
+          <button class="symptom-btn" data-sym="spotting" id="sym-spotting">💧 Spotting</button>
+          <button class="symptom-btn" data-sym="acne" id="sym-acne">✨ Acne</button>
+          <button class="symptom-btn" data-sym="tender" id="sym-tender">🩷 Breast Tenderness</button>
+          <button class="symptom-btn" data-sym="cravings" id="sym-cravings">🍫 Cravings</button>
+        </div>
+
+        <button class="save-btn" id="saveTodayBtn">Save Today's Log ✨</button>
+      </div>
+
+      <!-- Phase Description -->
+      <div class="phase-card" id="phaseCard">
+        <div class="phase-gradient"></div>
+        <div class="phase-content">
+          <h3 class="phase-name" id="phaseName">–</h3>
+          <p class="phase-desc" id="phaseDesc">–</p>
+          <ul class="phase-tips" id="phaseTips"></ul>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ======= PAGE: CALENDAR ======= -->
+    <section class="page" id="page-calendar">
+      <div class="page-header">
+        <h2 class="page-title">🗓️ Cycle Calendar</h2>
+        <p class="page-sub">Your cycle visualized, month by month</p>
+      </div>
+
+      <div class="cal-controls">
+        <button class="cal-nav-btn" id="calPrev">‹</button>
+        <h3 class="cal-month-title" id="calMonthTitle">–</h3>
+        <button class="cal-nav-btn" id="calNext">›</button>
+      </div>
+
+      <div class="calendar-wrap" id="calendarWrap">
+        <div class="cal-day-headers">
+          <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span>
+          <span>Thu</span><span>Fri</span><span>Sat</span>
+        </div>
+        <div class="cal-days" id="calDays"></div>
+      </div>
+
+      <div class="cal-legend">
+        <span class="legend-item"><span class="legend-dot period-dot"></span> Period</span>
+        <span class="legend-item"><span class="legend-dot fertile-dot"></span> Fertile</span>
+        <span class="legend-item"><span class="legend-dot ovulation-dot"></span> Ovulation</span>
+        <span class="legend-item"><span class="legend-dot predicted-dot"></span> Predicted</span>
+      </div>
+    </section>
+
+    <!-- ======= PAGE: LOG ======= -->
+    <section class="page" id="page-log">
+      <div class="page-header">
+        <h2 class="page-title">📝 Period Log</h2>
+        <p class="page-sub">Track your period start and end dates</p>
+      </div>
+
+      <div class="log-form-card">
+        <h3 class="form-title">Log a New Period</h3>
+        <div class="form-group">
+          <label class="form-label" for="startDateInput">Period Start Date</label>
+          <input type="date" id="startDateInput" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="endDateInput">Period End Date</label>
+          <input type="date" id="endDateInput" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="flowSelect">Flow Intensity</label>
+          <select id="flowSelect" class="form-input">
+            <option value="light">🩸 Light</option>
+            <option value="medium" selected>🩸🩸 Medium</option>
+            <option value="heavy">🩸🩸🩸 Heavy</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="noteInput">Notes (optional)</label>
+          <textarea id="noteInput" class="form-input form-textarea" placeholder="How was this period?"></textarea>
+        </div>
+        <button class="save-btn" id="logPeriodBtn">Log Period 🌸</button>
+      </div>
+
+      <div class="log-history" id="logHistory">
+        <h3 class="section-title">Period History</h3>
+        <div id="logList" class="log-list">
+          <p class="empty-msg">No periods logged yet. Start by logging above! 💕</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======= PAGE: INSIGHTS ======= -->
+    <section class="page" id="page-insights">
+      <div class="page-header">
+        <h2 class="page-title">📊 Insights</h2>
+        <p class="page-sub">Understand your body's beautiful patterns</p>
+      </div>
+
+      <div class="insight-cards">
+        <div class="insight-card">
+          <div class="insight-icon">📆</div>
+          <h4 class="insight-title">Average Cycle</h4>
+          <p class="insight-val" id="avgCycleIns">– days</p>
+          <p class="insight-note">Typical range: 21–35 days</p>
+        </div>
+        <div class="insight-card">
+          <div class="insight-icon">🩸</div>
+          <h4 class="insight-title">Average Period</h4>
+          <p class="insight-val" id="avgPeriodIns">– days</p>
+          <p class="insight-note">Typical range: 3–7 days</p>
+        </div>
+        <div class="insight-card">
+          <div class="insight-icon">🎯</div>
+          <h4 class="insight-title">Cycles Logged</h4>
+          <p class="insight-val" id="totalCyclesIns">0</p>
+          <p class="insight-note">Keep logging for better predictions!</p>
+        </div>
+        <div class="insight-card">
+          <div class="insight-icon">💎</div>
+          <h4 class="insight-title">Regularity</h4>
+          <p class="insight-val" id="regularityIns">–</p>
+          <p class="insight-note">Based on variation in cycle length</p>
+        </div>
+      </div>
+
+      <!-- Chart: Cycle Length History -->
+      <div class="chart-card">
+        <h3 class="section-title">Cycle Length History</h3>
+        <div class="bar-chart" id="barChart">
+          <p class="empty-msg">Log at least 2 periods to see your cycle history 📈</p>
+        </div>
+      </div>
+
+      <!-- Common Symptoms -->
+      <div class="section-card">
+        <h3 class="section-title">Most Common Symptoms 🩺</h3>
+        <div class="symptom-bubbles" id="symptomBubbles">
+          <p class="empty-msg">Log some symptoms to see your patterns! 🌷</p>
+        </div>
+      </div>
+
+      <!-- Mood Patterns -->
+      <div class="section-card">
+        <h3 class="section-title">Mood Patterns 🌈</h3>
+        <div class="mood-bubbles" id="moodBubbles">
+          <p class="empty-msg">Log some moods to see your patterns! 🌷</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===== PERIOD REMINDER BANNER ===== -->
+  <div class="reminder-banner hidden" id="reminderBanner">
+    <div class="reminder-inner">
+      <span class="reminder-emoji" id="reminderEmoji">🌹</span>
+      <div class="reminder-text">
+        <p class="reminder-title" id="reminderTitle">Period Reminder 💕</p>
+        <p class="reminder-msg" id="reminderMsg"></p>
+      </div>
+      <button class="reminder-close" id="reminderClose" aria-label="Dismiss">✕</button>
+    </div>
+  </div>
+
+  <!-- ===== TOAST NOTIFICATION ===== -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ===== SETTINGS MODAL ===== -->
+  <div class="modal-overlay hidden" id="settingsModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-emoji">⚙️</span>
+        <h2 class="modal-title">Settings</h2>
+        <p class="modal-sub">Update your profile anytime 💕</p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="editName">Your Name</label>
+        <input type="text" id="editName" class="form-input" placeholder="e.g. Lily" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="editLastPeriod">Last Period Start Date</label>
+        <input type="date" id="editLastPeriod" class="form-input" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="editCycleLen">Average Cycle Length (days)</label>
+        <input type="number" id="editCycleLen" class="form-input" min="21" max="45" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="editPeriodLen">Average Period Length (days)</label>
+        <input type="number" id="editPeriodLen" class="form-input" min="2" max="10" />
+      </div>
+
+      <div class="settings-actions">
+        <button class="save-btn modal-btn" id="settingsSaveBtn">Save Changes 🌸</button>
+        <button class="cancel-btn" id="settingsCancelBtn">Cancel</button>
+      </div>
+
+      <div class="danger-zone">
+        <p class="danger-label">⚠️ Danger Zone</p>
+        <button class="danger-btn" id="resetDataBtn">Reset All Data 🗑️</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SETUP MODAL ===== -->
+  <div class="modal-overlay" id="setupModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-emoji">🌙</span>
+        <h2 class="modal-title">Welcome to Luna</h2>
+        <p class="modal-sub">Let's personalize your experience 💕</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="setupName">Your Name</label>
+        <input type="text" id="setupName" class="form-input" placeholder="e.g. Lily" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="setupLastPeriod">Last Period Start Date</label>
+        <input type="date" id="setupLastPeriod" class="form-input" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="setupCycleLen">Average Cycle Length (days)</label>
+        <input type="number" id="setupCycleLen" class="form-input" value="28" min="21" max="45" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="setupPeriodLen">Average Period Length (days)</label>
+        <input type="number" id="setupPeriodLen" class="form-input" value="5" min="2" max="10" />
+      </div>
+      <button class="save-btn modal-btn" id="setupSaveBtn">Start My Journey 🌸</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
