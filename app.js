@@ -359,7 +359,7 @@ function openSettings() {
   document.getElementById('editPeriodLen').value = state.user.periodLen || 5;
   
   // 💡 URL ကို အသည်းလေးတွေနဲ့ ပြမယ်
-  document.getElementById('editSyncUrl').value = state.syncUrl ? '•••••' : ''; 
+  document.getElementById('editSyncUrl').value = state.syncUrl ? '💕💕💕💕💕' : ''; 
   settingsModal.classList.remove('hidden');
 }
 
@@ -473,17 +473,30 @@ function showNotifPromptCard() {
   });
 }
 
+// 💡 ဒီအပိုင်းမှာ Flutter နဲ့ ချိတ်ဆက်မယ့် Code ထပ်ပေါင်းထည့်ထားပါတယ်
 async function checkReminder() {
   if (!state.user) return;
   const info = cycleInfo(); if (!info) return;
   if (info.daysUntil !== 2 && info.daysUntil !== 1) return;
   if (sessionStorage.getItem('luna_reminder_dismissed') === today()) return;
   if (store.get('luna_reminder_sent_for') === info.nextPeriod) return;
+  
   const sentence = randRomantic();
   store.set('luna_reminder_sent_for', info.nextPeriod);
   showReminderBanner(sentence, info.daysUntil);
+  
   const title = info.daysUntil === 2 ? '🌹 Luna — Period in 2 Days, My Love' : '🌸 Luna — Your Period is Tomorrow';
   await sendBrowserNotif(title, sentence.replace(/[🌹💕🌸🌙💗🌺🩷💌🌷🫶💫🌕🌟]/gu, '').trim());
+
+  // 💡 Flutter App ဆီသို့ Noti အချက်အလက် လှမ်းပို့မည့် တံတား (Bridge) 
+  if (window.LunaNative) {
+    window.LunaNative.postMessage(JSON.stringify({
+      action: 'scheduleNoti',
+      title: title,
+      body: sentence,
+      daysUntil: info.daysUntil 
+    }));
+  }
 }
 
 /* ════════════════════════════════════
