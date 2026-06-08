@@ -322,33 +322,47 @@ function renderInsights() {
 
 /* ── Setup Modal ── */
 const setupModal = document.getElementById('setupModal');
-function showSetup() { setupModal.classList.remove('hidden'); }
-function hideSetup() { setupModal.classList.add('hidden'); }
+
+function showSetup() { 
+  setupModal.classList.remove('hidden'); 
+  document.body.style.overflow = 'hidden'; 
+}
+
+function hideSetup() { 
+  setupModal.classList.add('hidden'); 
+  document.body.style.overflow = ''; 
+}
 
 document.getElementById('setupSaveBtn').addEventListener('click', () => {
   const name = document.getElementById('setupName').value.trim() || 'Beautiful';
   const lastPeriod = document.getElementById('setupLastPeriod').value;
   const cycleLen = parseInt(document.getElementById('setupCycleLen').value) || 28;
   const periodLen = parseInt(document.getElementById('setupPeriodLen').value) || 5;
+  
   if (!lastPeriod) { showToast('Please enter your last period start date! 💕'); return; }
+  
   state.user = { name, lastPeriod, cycleLen, periodLen };
   store.set('luna_user', state.user);
+  
   hideSetup();
-  initDashboard();
-  showToast(`Welcome to Luna, ${name}! 🌙✨`);
+  location.reload(); // Save လုပ်ပြီးတာနဲ့ အကုန် Refresh ချမယ်
 });
 
 /* ── Settings Modal ── */
 const settingsModal = document.getElementById('settingsModal');
+
 function openSettings() {
   if (!state.user) return;
   document.getElementById('editName').value = state.user.name || '';
   document.getElementById('editLastPeriod').value = state.user.lastPeriod || '';
   document.getElementById('editCycleLen').value = state.user.cycleLen || 28;
   document.getElementById('editPeriodLen').value = state.user.periodLen || 5;
-  document.getElementById('editSyncUrl').value = state.syncUrl || '';
+  
+  // 💡 URL ကို အသည်းလေးတွေနဲ့ ပြမယ်
+  document.getElementById('editSyncUrl').value = state.syncUrl ? '•••••' : ''; 
   settingsModal.classList.remove('hidden');
 }
+
 function closeSettings() { settingsModal.classList.add('hidden'); }
 
 document.getElementById('navAvatar').addEventListener('click', openSettings);
@@ -360,39 +374,24 @@ document.getElementById('settingsSaveBtn').addEventListener('click', async () =>
   const lastPeriod = document.getElementById('editLastPeriod').value;
   const cycleLen = parseInt(document.getElementById('editCycleLen').value) || 28;
   const periodLen = parseInt(document.getElementById('editPeriodLen').value) || 5;
-  const syncUrl = document.getElementById('editSyncUrl').value.trim();
+  const syncUrlInput = document.getElementById('editSyncUrl').value.trim();
+  
   if (!lastPeriod) { showToast('Please enter your last period start date! 💕'); return; }
   
   state.user = { name, lastPeriod, cycleLen, periodLen };
   store.set('luna_user', state.user);
   
-  const oldSyncUrl = state.syncUrl;
-  state.syncUrl = syncUrl || null;
-  if (state.syncUrl) {
+  // 💡 အသည်းလေးတွေ ရိုက်ထည့်ခဲ့ရင် အဟောင်းကိုပဲ ဆက်သုံးမယ်၊ အသစ်တစ်ခုခု ရိုက်ထည့်ရင် အဲ့ဒါကို ပြောင်းသုံးမယ်
+  if (syncUrlInput !== '•••••' && syncUrlInput !== '') {
+    state.syncUrl = syncUrlInput;
     store.set('luna_sync_url', state.syncUrl);
-  } else {
+  } else if (syncUrlInput === '') {
+    state.syncUrl = null;
     localStorage.removeItem('luna_sync_url');
   }
   
   closeSettings();
-  initDashboard();
-  showToast(`Settings saved! Hey ${name} 🌙✨`);
-  
-  if (state.syncUrl && state.syncUrl !== oldSyncUrl) {
-    updateSyncStatus('Connecting...');
-    const success = await fetchCloudData();
-    if (success) {
-      initDashboard();
-      renderLogHistory();
-      showToast('Connected to Cloud Sync & data updated! ☁️✨');
-    } else {
-      pushToCloud();
-    }
-  } else if (!state.syncUrl) {
-    updateSyncStatus('');
-  } else {
-    pushToCloud();
-  }
+  location.reload(); // Settings တွေ ပြင်ပြီးတာနဲ့ သေချာအောင် Refresh ချမယ်
 });
 
 document.getElementById('resetDataBtn').addEventListener('click', () => {
@@ -400,8 +399,8 @@ document.getElementById('resetDataBtn').addEventListener('click', () => {
   ['luna_user', 'luna_logs', 'luna_today', 'luna_day_logs', 'luna_reminder_sent_for', 'luna_notif_prompt_shown', 'luna_sync_url'].forEach(k => localStorage.removeItem(k));
   state.user = null; state.logs = []; state.todayLog = {}; state.syncUrl = null;
   updateSyncStatus('');
-  closeSettings(); renderLogHistory(); showSetup();
-  showToast('Reset complete 🌱');
+  closeSettings(); 
+  location.reload(); 
 });
 
 /* ════════════════════════════════════
@@ -412,32 +411,7 @@ const ROMANTIC = [
   "In 2 days, your period is arriving, my love 💕 Please be extra gentle with yourself — you deserve all the comfort in the world.",
   "Just a soft reminder that your period is coming soon 🌸 Stock up on your favorite chocolates and let yourself rest.",
   "Your cycle is about to begin, sweetheart 🌙 Your strength amazes me every month. I'm here for every cramp and every mood.",
-  "Hey beautiful 💗 Your period is just 2 days away. Warm baths, cozy blankets, and me by your side — that's the plan.",
-  "A little reminder from the moon 🌕 Your body is doing something incredible. Take it easy, my darling.",
-  "Two more days, love 🫶 Your body is a wonder. Let yourself be taken care of — you've earned it.",
-  "Your rhythm is so beautifully predictable 🌺 In 2 days, your period begins. I'll make sure you have everything you need.",
-  "Gentle reminder 💌 Your period is approaching. Time to slow down, breathe deep, and let yourself be loved.",
-  "The moon knows your cycle by heart 🌙✨ Your period is 2 days away, my dearest. Be soft with yourself.",
-  "My love, your period is coming in 2 days 🌷 Let's get cozy, order your favorite food, and cuddle all day if needed.",
-  "You are so in tune with your body 💫 A reminder that your period is arriving soon — treat yourself royally.",
-  "Darling, 2 days until your period 🌹 Your body is incredible and so are you. Let's make these days extra comfortable.",
-  "A whisper from Luna 🌙 Your period is approaching, beautiful. Be kind to yourself — you are so loved.",
-  "Your body is preparing for renewal 🌸 2 days to go, my love. Rest, hydrate, and let me spoil you.",
-  "Hey you 💕 Just a reminder that your period is 2 days away. You handle this every month with such grace.",
-  "The stars have noted it 🌟 Your period arrives in 2 days. Warm hugs and hot water bottles are on their way.",
-  "Your cycle is like the moon — beautiful and powerful 🌕 In 2 days, your period begins. I'm here for you always.",
-  "Precious reminder 💗 Your period is coming in 2 days. You are magnificent, even on the hard days.",
-  "Two days, my love 🩷 Your body is wise and wonderful. Let me take care of you as your period approaches.",
-  "A love note from your Luna app 💌 Your period is 2 days away. Today is a good day for self-care and extra rest.",
-  "Your monthly cycle is nature's poetry 🌺 2 more days, sweetheart. Treat your body like the treasure it is.",
-  "Hey gorgeous 🌸 Your period is arriving in 2 days. Stock up on comfort — you deserve the softest days.",
-  "The universe is in sync with you 🌙 Your period comes in 2 days. Give yourself grace and extra love.",
-  "My darling 💕 In 2 days your period will begin. Remember: rest is productive. You are so deeply loved.",
-  "A tender reminder 🌷 Your period is 2 days away. Drink more water, eat what you crave, and be gentle with your heart.",
-  "You are cyclical, powerful, and magical 🌕 Your period arrives in 2 days. Honor yourself completely.",
-  "Sweet reminder 🫶 Your period is almost here. In 2 days — cozy socks, warm tea, and all the love in the world.",
-  "Your body speaks and Luna listens 🌙 Period in 2 days, love. Let today be filled with softness and care.",
-  "A rose petal note from Luna 🌹 Your period is 2 days away. You are beautiful in every phase of your cycle."
+  "Hey beautiful 💗 Your period is just 2 days away. Warm baths, cozy blankets, and me by your side — that's the plan."
 ];
 
 const randRomantic = () => ROMANTIC[Math.floor(Math.random() * ROMANTIC.length)];
@@ -588,37 +562,65 @@ async function pushToCloud() {
 const syncGuideModal = document.getElementById('syncGuideModal');
 document.getElementById('syncGuideBtn').addEventListener('click', e => {
   e.preventDefault();
-  syncGuideModal.classList.remove('hidden');
+  if(syncGuideModal) syncGuideModal.classList.remove('hidden');
 });
-document.getElementById('syncGuideCloseBtn').addEventListener('click', () => {
-  syncGuideModal.classList.add('hidden');
-});
-syncGuideModal.addEventListener('click', e => {
-  if (e.target === syncGuideModal) syncGuideModal.classList.add('hidden');
-});
+if(document.getElementById('syncGuideCloseBtn')){
+  document.getElementById('syncGuideCloseBtn').addEventListener('click', () => {
+    syncGuideModal.classList.add('hidden');
+  });
+}
+if(syncGuideModal){
+  syncGuideModal.addEventListener('click', e => {
+    if (e.target === syncGuideModal) syncGuideModal.classList.add('hidden');
+  });
+}
 
 /* ── Boot ── */
 async function boot() {
   document.getElementById('startDateInput').value = today();
   document.getElementById('endDateInput').value = today();
   document.getElementById('setupLastPeriod').value = today();
-  renderLogHistory();
+  
+  if (state.user) {
+    hideSetup(); 
+    initDashboard();
+    renderLogHistory();
+  } else {
+    showSetup(); 
+  }
+
   await registerSW();
   
   if (state.syncUrl) {
-    updateSyncStatus('Syncing...');
+    updateSyncStatus('Syncing... ☁️');
     await fetchCloudData();
-    renderLogHistory();
+    
+    if (state.user) {
+      hideSetup(); 
+      initDashboard();
+      renderLogHistory();
+    }
   }
   
-  if (!state.user) {
-    showSetup();
-  } else {
-    hideSetup();
-    initDashboard();
+  const loader = document.getElementById('globalLoader');
+  if (loader) {
+    loader.classList.add('hidden');
+  }
+  
+  if (state.user) {
     showNotifPromptCard();
     setTimeout(checkReminder, 800);
   }
 }
 
 boot();
+
+/* ── Modal Scroll Lock (Definitive Fix) ── */
+const modalObserver = new MutationObserver(() => {
+  const isModalOpen = document.querySelectorAll('.modal-overlay:not(.hidden)').length > 0;
+  document.body.style.overflow = isModalOpen ? 'hidden' : '';
+});
+
+document.querySelectorAll('.modal-overlay').forEach(modal => {
+  modalObserver.observe(modal, { attributes: true, attributeFilter: ['class'] });
+});
