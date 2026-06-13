@@ -273,6 +273,12 @@ function renderLogHistory() {
 window.deleteLog = id => {
   state.logs = state.logs.filter(l => l.id !== id);
   store.set('luna_logs', state.logs);
+  
+  // 💡 Add deleted ID tracking for sync
+  const deletedIds = store.get('luna_deleted_logs', []);
+  if (!deletedIds.includes(id)) deletedIds.push(id);
+  store.set('luna_deleted_logs', deletedIds);
+
   renderLogHistory();
   initDashboard();
   showToast('Log removed.');
@@ -532,19 +538,53 @@ async function fetchCloudData() {
   try {
     const response = await fetch(state.syncUrl);
     if (response.ok) {
-      const cloudState = await response.json();
+      const text = await response.text();
+      if (!text) { updateSyncStatus('Sync Empty ☁️'); return false; }
+      const cloudState = JSON.parse(text);
       if (cloudState && (cloudState.user || cloudState.logs)) {
-        state.user = cloudState.user || state.user;
-        state.logs = cloudState.logs || [];
-        state.todayLog = cloudState.todayLog || {};
         
+        // 1. Handle deleted IDs
+        const cloudDeletedIds = cloudState.deletedIds || [];
+        const localDeletedIds = store.get('luna_deleted_logs', []);
+        const allDeletedIds = [...new Set([...localDeletedIds, ...cloudDeletedIds])];
+        store.set('luna_deleted_logs', allDeletedIds);
+
+        // 2. Merge logs safely (Cloud + Local, minus deleted)
+        const localLogs = store.get('luna_logs', []);
+        const cloudLogs = cloudState.logs || [];
+        const mergedLogsMap = new Map();
+        cloudLogs.forEach(l => mergedLogsMap.set(l.id, l));
+        localLogs.forEach(l => mergedLogsMap.set(l.id, l));
+        allDeletedIds.forEach(id => mergedLogsMap.delete(id)); // Remove deleted
+        state.logs = Array.from(mergedLogsMap.values()).sort((a,b) => b.id - a.id);
+
+        // 3. Merge User Data (Local wins if conflict)
+        state.user = cloudState.user || state.user;
+        
+        // 4. Merge dayLogs (Combine objects, local overwrites cloud if same date)
+        const localDayLogs = store.get('luna_day_logs', {});
+        const cloudDayLogs = cloudState.dayLogs || {};
+        store.set('luna_day_logs', { ...cloudDayLogs, ...localDayLogs });
+
+        // 5. Merge todayLog
+        const localTodayLog = store.get('luna_today', {});
+        const cloudTodayLog = cloudState.todayLog || {};
+        if (localTodayLog.date === today() && cloudTodayLog.date === today()) {
+           state.todayLog = {
+               date: today(),
+               moods: [...new Set([...(localTodayLog.moods||[]), ...(cloudTodayLog.moods||[])])],
+               symptoms: [...new Set([...(localTodayLog.symptoms||[]), ...(cloudTodayLog.symptoms||[])])]
+           };
+        } else if (localTodayLog.date === today()) {
+           state.todayLog = localTodayLog;
+        } else if (cloudTodayLog.date === today()) {
+           state.todayLog = cloudTodayLog;
+        }
+
+        // Save everything to Local Storage
         store.set('luna_user', state.user);
         store.set('luna_logs', state.logs);
         store.set('luna_today', state.todayLog);
-        
-        if (cloudState.dayLogs) {
-          store.set('luna_day_logs', cloudState.dayLogs);
-        }
         
         updateSyncStatus('Cloud Synced ☁️');
         return true;
@@ -562,11 +602,15 @@ async function pushToCloud() {
   if (!state.syncUrl) return;
   updateSyncStatus('Syncing... ☁️');
   try {
+    // 💡 Always fetch latest cloud data BEFORE pushing to avoid overwriting partner's data
+    await fetchCloudData(); 
+
     const payload = {
       user: state.user,
       logs: state.logs,
       todayLog: state.todayLog,
-      dayLogs: store.get('luna_day_logs', {})
+      dayLogs: store.get('luna_day_logs', {}),
+      deletedIds: store.get('luna_deleted_logs', []) // push deleted IDs so partner can delete them too
     };
     const response = await fetch(state.syncUrl, {
       method: 'POST',
@@ -622,3 +666,17 @@ async function boot() {
 }
 
 boot();
+
+// 💡 Auto-Sync when the user opens the app or switches back to the tab
+window.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && state.syncUrl) {
+    fetchCloudData().then(updated => {
+      if (updated) {
+        if (state.user) initDashboard();
+        renderLogHistory();
+        if (document.getElementById('page-calendar')?.classList.contains('active')) renderCalendar();
+        if (document.getElementById('page-insights')?.classList.contains('active')) renderInsights();
+      }
+    });
+  }
+});
