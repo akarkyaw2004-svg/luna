@@ -594,6 +594,7 @@ async function fetchCloudData() {
   } catch (e) {
     updateSyncStatus('Sync Offline 🔌');
     console.error('Fetch cloud data error:', e);
+    alert('Fetch Error: ' + e.name + ' - ' + e.message);
   }
   return false;
 }
@@ -621,10 +622,12 @@ async function pushToCloud() {
       updateSyncStatus('Cloud Synced ☁️');
     } else {
       updateSyncStatus('Sync Failed ⚠️');
+      alert('Push Error: HTTP ' + response.status);
     }
   } catch (e) {
     updateSyncStatus('Sync Offline 🔌');
     console.error('Push to cloud error:', e);
+    alert('Push Error: ' + e.name + ' - ' + e.message);
   }
 }
 
