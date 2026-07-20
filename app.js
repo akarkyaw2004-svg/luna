@@ -646,8 +646,19 @@ syncGuideModal.addEventListener('click', e => {
   if (e.target === syncGuideModal) syncGuideModal.classList.add('hidden');
 });
 
+/* ── Splash Screen ── */
+function hideSplash() {
+  const splash = document.getElementById('splashScreen');
+  if (!splash) return;
+  splash.classList.add('hide');
+  setTimeout(() => splash.classList.add('gone'), 650);
+}
+
 /* ── Boot ── */
 async function boot() {
+  // Start splash timer (minimum 2.2s so user can see it)
+  const splashTimer = new Promise(r => setTimeout(r, 2200));
+
   document.getElementById('startDateInput').value = today();
   document.getElementById('endDateInput').value = today();
   document.getElementById('setupLastPeriod').value = today();
@@ -674,6 +685,10 @@ async function boot() {
     showNotifPromptCard();
     setTimeout(checkReminder, 800);
   }
+
+  // Wait for minimum splash time, then hide
+  await splashTimer;
+  hideSplash();
 }
 
 boot();

@@ -2,13 +2,16 @@
    LUNA – service-worker.js  (PWA + Notification support)
    ============================================================ */
 
-const CACHE_NAME = 'luna-v3';
+const CACHE_NAME = 'luna-v4';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './app.js',
   './manifest.json',
+  './icon-192.png',
+  './icon-512.png',
+  './splash.png',
   'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap'
 ];
 

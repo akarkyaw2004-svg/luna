@@ -20,9 +20,35 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Luna" />
+  <!-- App Icons -->
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png" />
+  <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png" />
 </head>
 
 <body>
+
+  <!-- ===== SPLASH SCREEN ===== -->
+  <div id="splashScreen" class="splash-screen">
+    <div class="splash-bg"></div>
+    <div class="splash-content">
+      <div class="splash-photo-wrap">
+        <img src="icon-512.png" alt="Luna" class="splash-photo" />
+        <div class="splash-photo-glow"></div>
+      </div>
+      <div class="splash-logo">
+        <span class="splash-moon">🌙</span>
+        <h1 class="splash-title">Luna</h1>
+        <p class="splash-tagline">Your Cycle, Your Story</p>
+      </div>
+      <div class="splash-dots">
+        <span></span><span></span><span></span>
+      </div>
+      <p class="splash-credit">Powered by Mg 💕</p>
+    </div>
+  </div>
 
   <!-- ===== NAVIGATION ===== -->
   <nav class="navbar" id="navbar">
