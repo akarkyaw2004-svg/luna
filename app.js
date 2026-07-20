@@ -369,6 +369,7 @@ document.getElementById('settingsSaveBtn').addEventListener('click', async () =>
   const syncUrl = document.getElementById('editSyncUrl').value.trim();
   if (!lastPeriod) { showToast('Please enter your last period start date! 💕'); return; }
   
+  // ✅ Save to state + localStorage immediately
   state.user = { name, lastPeriod, cycleLen, periodLen };
   store.set('luna_user', state.user);
   
@@ -381,13 +382,19 @@ document.getElementById('settingsSaveBtn').addEventListener('click', async () =>
   }
   
   closeSettings();
+  // ✅ FIX: Always call initDashboard() AFTER all changes so dates/stats update immediately
   initDashboard();
+  renderLogHistory();
   showToast(`Settings saved! Hey ${name} 🌙✨`);
   
   if (state.syncUrl && state.syncUrl !== oldSyncUrl) {
+    // New sync URL — try to pull cloud data first
     updateSyncStatus('Connecting...');
     const success = await fetchCloudData();
     if (success) {
+      state.user = store.get('luna_user', state.user);
+      state.logs = store.get('luna_logs', state.logs);
+      state.todayLog = store.get('luna_today', state.todayLog);
       initDashboard();
       renderLogHistory();
       showToast('Connected to Cloud Sync & data updated! ☁️✨');
@@ -594,7 +601,6 @@ async function fetchCloudData() {
   } catch (e) {
     updateSyncStatus('Sync Offline 🔌');
     console.error('Fetch cloud data error:', e);
-    alert('Fetch Error: ' + e.name + ' - ' + e.message);
   }
   return false;
 }
@@ -603,15 +609,13 @@ async function pushToCloud() {
   if (!state.syncUrl) return;
   updateSyncStatus('Syncing... ☁️');
   try {
-    // 💡 Always fetch latest cloud data BEFORE pushing to avoid overwriting partner's data
-    await fetchCloudData(); 
-
+    // 💡 Push local data directly — do NOT pre-fetch (that would overwrite local changes)
     const payload = {
       user: state.user,
       logs: state.logs,
       todayLog: state.todayLog,
       dayLogs: store.get('luna_day_logs', {}),
-      deletedIds: store.get('luna_deleted_logs', []) // push deleted IDs so partner can delete them too
+      deletedIds: store.get('luna_deleted_logs', [])
     };
     const response = await fetch(state.syncUrl, {
       method: 'POST',
@@ -622,12 +626,10 @@ async function pushToCloud() {
       updateSyncStatus('Cloud Synced ☁️');
     } else {
       updateSyncStatus('Sync Failed ⚠️');
-      alert('Push Error: HTTP ' + response.status);
     }
   } catch (e) {
     updateSyncStatus('Sync Offline 🔌');
     console.error('Push to cloud error:', e);
-    alert('Push Error: ' + e.name + ' - ' + e.message);
   }
 }
 
@@ -649,15 +651,21 @@ async function boot() {
   document.getElementById('startDateInput').value = today();
   document.getElementById('endDateInput').value = today();
   document.getElementById('setupLastPeriod').value = today();
-  renderLogHistory();
   await registerSW();
-  
+
+  // ✅ FIX: Fetch cloud data FIRST, then decide whether to show setup or dashboard
   if (state.syncUrl) {
     updateSyncStatus('Syncing...');
     await fetchCloudData();
-    renderLogHistory();
   }
-  
+
+  // Re-read from localStorage after cloud fetch (state may have been updated)
+  state.user = store.get('luna_user', null);
+  state.logs = store.get('luna_logs', []);
+  state.todayLog = store.get('luna_today', {});
+
+  renderLogHistory();
+
   if (!state.user) {
     showSetup();
   } else {
